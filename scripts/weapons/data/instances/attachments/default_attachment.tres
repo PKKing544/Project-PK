@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AttachmentData" load_steps=2 format=3 uid="uid://df7j8k9l0m1p8"]
+
+[ext_resource type="Script" path="res://scripts/weapons/data/attachment_data.gd" id="1_att"]
+
+[resource]
+script = ExtResource("1_att")
+attachment_name = "Standard Scope"
+damage_multiplier = 1.0
+fire_rate_multiplier = 1.0
+charge_time_multiplier = 1.0
+ink_cost_multiplier = 1.0
+projectile_speed_multiplier = 1.0
+range_multiplier = 1.2
+spread_add_deg = -0.5
+recoil_add_deg = 0.0
+pellet_count_add = 0
+burst_count_add = 0
+projectile_gravity_add = 0.0
+override_to_healing = false
+extra_hit_effects = []

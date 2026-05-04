@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://oqi6672m6e6f"]
+
+[ext_resource type="Material" uid="uid://t7bds6aj7mmm" path="res://art/prototype_grid.tres" id="1_grid"]
+
+[node name="TowerChunk" type="Node3D"]
+
+[node name="LevelGeometry" type="CSGCombiner3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+use_collision = true
+
+[node name="TowerBase" type="CSGCylinder3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
+radius = 6.0
+height = 20.0
+sides = 12
+material = ExtResource("1_grid")
+
+[node name="TowerInterior" type="CSGCylinder3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
+operation = 2
+radius = 5.0
+height = 22.0
+sides = 12
+material = ExtResource("1_grid")
+
+[node name="Door" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 5.5)
+operation = 2
+size = Vector3(2, 3, 2)
+material = ExtResource("1_grid")

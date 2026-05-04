@@ -1,0 +1,81 @@
+[gd_scene format=3 uid="uid://bm5mt4rnmbta0"]
+
+[ext_resource type="PackedScene" uid="uid://bubiarododkth" path="res://core/player/Player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://d24v83als6drr" path="res://gym_builder.gd" id="2_gym"]
+[ext_resource type="Script" uid="uid://djcgsus371p7r" path="res://dummy.gd" id="3_dummy"]
+[ext_resource type="Script" uid="uid://clytvv4ynybwg" path="res://scripts/enemies/basic_enemy.gd" id="4_enemy"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
+sky_top_color = Color(0.05, 0.05, 0.15, 1)
+sky_horizon_color = Color(0.15, 0.12, 0.2, 1)
+ground_bottom_color = Color(0.02, 0.02, 0.05, 1)
+ground_horizon_color = Color(0.1, 0.08, 0.15, 1)
+sun_curve = 0.05
+
+[sub_resource type="Sky" id="Sky"]
+sky_material = SubResource("SkyMat")
+
+[sub_resource type="Environment" id="Env"]
+background_mode = 2
+sky = SubResource("Sky")
+tonemap_mode = 3
+tonemap_white = 6.0
+ssao_enabled = true
+ssao_radius = 2.0
+ssao_intensity = 2.5
+ssil_enabled = true
+ssil_radius = 3.0
+glow_enabled = true
+glow_strength = 0.8
+glow_bloom = 0.1
+fog_enabled = true
+fog_light_color = Color(0.12, 0.1, 0.18, 1)
+fog_density = 0.002
+fog_sky_affect = 0.3
+
+[node name="World" type="Node3D" unique_id=432816744]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=2122600780]
+environment = SubResource("Env")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=841373899]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 40, 0)
+light_color = Color(0.95, 0.9, 0.85, 1)
+light_energy = 1.8
+light_indirect_energy = 0.6
+light_angular_distance = 1.0
+shadow_enabled = true
+shadow_blur = 1.5
+directional_shadow_max_distance = 200.0
+
+[node name="FillLight" type="DirectionalLight3D" parent="." unique_id=1096485492]
+transform = Transform3D(0.866, 0.354, -0.354, 0, 0.707, 0.707, 0.5, -0.612, 0.612, 0, 30, 0)
+light_color = Color(0.4, 0.5, 0.7, 1)
+light_energy = 0.4
+
+[node name="Player" parent="." unique_id=1428556120 instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+dash_speed = 25.0
+
+[node name="GymBuilder" type="Node3D" parent="." unique_id=14394909]
+script = ExtResource("2_gym")
+
+[node name="TestDummy" type="StaticBody3D" parent="." unique_id=1211589540]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -15)
+script = ExtResource("3_dummy")
+
+[node name="TestEnemy" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 2, -15)
+script = ExtResource("4_enemy")
+
+[node name="TestEnemy2" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 2, -15)
+script = ExtResource("4_enemy")
+
+[node name="TestEnemy3" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 2, -10)
+script = ExtResource("4_enemy")
+
+[node name="TestEnemy4" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2, -10)
+script = ExtResource("4_enemy")

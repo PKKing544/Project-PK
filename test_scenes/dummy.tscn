@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dweam8vv0s26l"]
+
+[ext_resource type="Script" path="res://test_scenes/dummy.gd" id="1_dummy"]
+
+[node name="TestDummy" type="StaticBody3D"]
+script = ExtResource("1_dummy")

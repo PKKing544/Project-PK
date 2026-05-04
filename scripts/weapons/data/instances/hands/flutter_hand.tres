@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="HandData" format=3 uid="uid://chdivj02sth5g"]
+
+[ext_resource type="Script" uid="uid://dskg001fqn105" path="res://scripts/weapons/data/fire_mode_data.gd" id="1_fire"]
+[ext_resource type="Script" uid="uid://bsis3yh6n3aav" path="res://scripts/weapons/data/effect_data.gd" id="1_jt0uy"]
+[ext_resource type="Script" uid="uid://d3okkd22brolr" path="res://scripts/weapons/data/hand_data.gd" id="2_hand"]
+[ext_resource type="PackedScene" uid="uid://ukg5w63y13ai" path="res://scripts/weapons/logic/impl/flutter_projectile.tscn" id="3_proj"]
+
+[sub_resource type="Resource" id="Resource_primary"]
+script = ExtResource("1_fire")
+mode_name = "Flutter LMG"
+fire_type = 1
+damage = 1.0
+kickback_force = 0.2
+fire_rate_sec = 0.12
+ink_cost = 2.0
+spread_deg = 2.0
+recoil_deg = 0.2
+range_m = 60.0
+pellet_count = 2
+min_charge_time_sec = 0.0
+max_charge_time_sec = 0.0
+projectile_speed_m_s = 120.0
+projectile_scene = ExtResource("3_proj")
+reactive_kickback_force = 13.0
+reactive_kickback_range = 5.0
+reactive_kickback_threshold = 1
+
+[resource]
+script = ExtResource("2_hand")
+hand_name = "Flutter LMG"
+max_ink = 150.0
+passive_ink_regen_per_sec = 30.0
+primary_mode = SubResource("Resource_primary")

@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://cvttsldyxoncg"]
+
+[ext_resource type="Material" uid="uid://t7bds6aj7mmm" path="res://art/prototype_grid.tres" id="1_grid"]
+
+[node name="HallChunk" type="Node3D"]
+
+[node name="LevelGeometry" type="CSGCombiner3D" parent="."]
+use_collision = true
+
+[node name="Hallway" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+size = Vector3(6, 6, 30)
+material = ExtResource("1_grid")
+
+[node name="Interior" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+operation = 2
+size = Vector3(4, 5, 32)
+material = ExtResource("1_grid")

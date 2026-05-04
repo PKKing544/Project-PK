@@ -1,0 +1,82 @@
+[gd_scene format=3 uid="uid://dgaf6d4yegfc7"]
+
+[ext_resource type="Script" uid="uid://c4sadht0lwr0u" path="res://ui/debug_equipment_menu.gd" id="1_script"]
+
+[node name="DebugEquipmentMenu" type="Control" unique_id=369982884]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Panel" type="Panel" parent="." unique_id=1278904353]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -200.0
+offset_right = 200.0
+offset_bottom = 269.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel" unique_id=967843134]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="Panel/VBox" unique_id=1152959307]
+layout_mode = 2
+text = "Equipment Debug 'C'"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="Panel/VBox" unique_id=1324333650]
+layout_mode = 2
+
+[node name="HandLabel" type="Label" parent="Panel/VBox" unique_id=402018479]
+layout_mode = 2
+text = "Black"
+
+[node name="HandOpt" type="OptionButton" parent="Panel/VBox" unique_id=174270849]
+layout_mode = 2
+
+[node name="AttachmentLabel" type="Label" parent="Panel/VBox" unique_id=528457311]
+layout_mode = 2
+text = "Black = Pink"
+
+[node name="AttachmentOpt" type="OptionButton" parent="Panel/VBox" unique_id=1558512829]
+layout_mode = 2
+
+[node name="AbilityLabel" type="Label" parent="Panel/VBox" unique_id=750649503]
+layout_mode = 2
+text = "Pink"
+
+[node name="AbilityOpt" type="OptionButton" parent="Panel/VBox" unique_id=1807870033]
+layout_mode = 2
+
+[node name="DashLabel" type="Label" parent="Panel/VBox" unique_id=657198553]
+layout_mode = 2
+text = "Dash"
+
+[node name="DashOpt" type="OptionButton" parent="Panel/VBox" unique_id=162412005]
+layout_mode = 2
+
+[node name="HeavyLabel" type="Label" parent="Panel/VBox" unique_id=1025624447]
+layout_mode = 2
+text = "Heavy Hit"
+
+[node name="HeavyOpt" type="OptionButton" parent="Panel/VBox" unique_id=139891989]
+layout_mode = 2

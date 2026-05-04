@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="HandData" format=3 uid="uid://e2prvtrl5odd"]
+
+[ext_resource type="Script" uid="uid://dskg001fqn105" path="res://scripts/weapons/data/fire_mode_data.gd" id="1_fire"]
+[ext_resource type="Script" uid="uid://bsis3yh6n3aav" path="res://scripts/weapons/data/effect_data.gd" id="1_xher6"]
+[ext_resource type="Script" uid="uid://d3okkd22brolr" path="res://scripts/weapons/data/hand_data.gd" id="2_hand"]
+[ext_resource type="PackedScene" uid="uid://bhyunccofy36y" path="res://scripts/weapons/logic/impl/burst_projectile.tscn" id="3_proj"]
+
+[sub_resource type="Resource" id="Resource_primary"]
+script = ExtResource("1_fire")
+mode_name = "Hitscan Tap"
+trigger_type = 1
+damage = 5.0
+fire_rate_sec = 0.2
+burst_delay_sec = 0.0
+min_charge_time_sec = 0.0
+max_charge_time_sec = 0.0
+reactive_kickback_range = 0.0
+reactive_kickback_threshold = 0
+
+[sub_resource type="Resource" id="Resource_secondary"]
+script = ExtResource("1_fire")
+mode_name = "Charge Projectile"
+fire_type = 1
+trigger_type = 3
+kickback_force = 12.0
+fire_rate_sec = 0.0
+ink_cost = 5.0
+burst_delay_sec = 0.0
+min_charge_time_sec = 0.8
+max_charge_time_sec = 0.8
+projectile_speed_m_s = 90.0
+projectile_scene = ExtResource("3_proj")
+reactive_kickback_range = 0.0
+reactive_kickback_threshold = 0
+
+[resource]
+script = ExtResource("2_hand")
+hand_name = "Charge Projectile"
+passive_ink_regen_per_sec = 25.0
+primary_mode = SubResource("Resource_primary")
+secondary_mode = SubResource("Resource_secondary")

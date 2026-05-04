@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="HeavyAttackData" format=3 uid="uid://df7j8lal0m1p6"]
+
+[ext_resource type="Script" uid="uid://di87ylpjj7v6m" path="res://scripts/weapons/data/heavy_attack_data.gd" id="1_heavy"]
+
+[resource]
+script = ExtResource("1_heavy")
+attack_name = "Heavy Lunge"
+damage = 20.0
+lunge_boost = 22.0

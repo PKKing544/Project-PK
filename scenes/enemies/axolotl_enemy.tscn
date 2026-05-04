@@ -1,0 +1,98 @@
+[gd_scene format=3 uid="uid://bfw64e8pvwh46"]
+
+[ext_resource type="Script" path="res://scripts/enemies/axolotl_enemy.gd" id="1_axo"]
+[ext_resource type="Script" path="res://scripts/enemies/sweet_spot.gd" id="2_sweet"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(3, 2, 2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+resource_local_to_scene = true
+albedo_color = Color(0.1, 0.4, 0.6, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_1"]
+material = SubResource("StandardMaterial3D_1")
+size = Vector3(1.5, 0.5, 2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_2"]
+size = Vector3(3, 0.8, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2"]
+resource_local_to_scene = true
+albedo_color = Color(0.8, 0.4, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_2"]
+material = SubResource("StandardMaterial3D_2")
+size = Vector3(1, 0.8, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_1"]
+radius = 0.4
+height = 0.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3"]
+resource_local_to_scene = true
+albedo_color = Color(1, 0, 0, 1)
+emission_enabled = true
+emission = Color(1, 0.2, 0, 1)
+emission_energy_multiplier = 4.0
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_3"]
+size = Vector3(3, 3, 8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4"]
+resource_local_to_scene = true
+transparency = 1
+albedo_color = Color(1, 0.5, 0, 0.4)
+emission_enabled = true
+emission = Color(1, 0.3, 0, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_3"]
+material = SubResource("StandardMaterial3D_4")
+size = Vector3(3, 3, 8)
+
+[node name="AxolotlEnemy" type="CharacterBody3D" unique_id=1630446793 groups=["enemy"]]
+transform = Transform3D(1.5, 0, 0, 0, 1.2, 0, 0, 0, 1.6, 0, 0, 0)
+script = ExtResource("1_axo")
+threat_radius = 60.0
+fire_radius = 25.0
+melee_radius = 16.0
+projectile_speed = 35.0
+fire_delay = 0.5
+
+[node name="BodyCollision" type="CollisionShape3D" parent="." unique_id=1395307334]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, 0)
+shape = SubResource("BoxShape3D_1")
+
+[node name="BodyMesh" type="MeshInstance3D" parent="." unique_id=1396448262]
+transform = Transform3D(1, 0, 0, 0, 1.9000001, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("BoxMesh_1")
+
+[node name="HeadPivot" type="Node3D" parent="." unique_id=781353514]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, -1)
+
+[node name="SweetSpotHitbox" type="AnimatableBody3D" parent="HeadPivot" unique_id=64604893 groups=["enemy_hurtbox"]]
+transform = Transform3D(0.98999995, 0, 0, 0, 1.2, 0, 0, 0, 1.3200002, 0, 0, 0)
+script = ExtResource("2_sweet")
+
+[node name="HeadCollision" type="CollisionShape3D" parent="HeadPivot/SweetSpotHitbox" unique_id=1354126025]
+shape = SubResource("BoxShape3D_2")
+
+[node name="HeadMesh" type="MeshInstance3D" parent="HeadPivot" unique_id=1346366323]
+transform = Transform3D(3.1000001, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("BoxMesh_2")
+
+[node name="MouthFireball" type="MeshInstance3D" parent="HeadPivot" unique_id=1836079864]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.6)
+mesh = SubResource("SphereMesh_1")
+surface_material_override/0 = SubResource("StandardMaterial3D_3")
+
+[node name="FlamethrowerArea" type="Area3D" parent="HeadPivot" unique_id=483395928]
+transform = Transform3D(1.5, 0, 0, 0, 1.1, 0, 0, 0, 1.3, 0, 0, -4.5)
+
+[node name="CollisionShape" type="CollisionShape3D" parent="HeadPivot/FlamethrowerArea" unique_id=1091741070]
+transform = Transform3D(0.95, 0, 0, 0, 0.95, 0, 0, 0, 0.95, 0, 0, -0.48076916)
+shape = SubResource("BoxShape3D_3")
+
+[node name="FlamethrowerMesh" type="MeshInstance3D" parent="HeadPivot/FlamethrowerArea" unique_id=1747571286]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 0, -0.48076916)
+mesh = SubResource("BoxMesh_3")

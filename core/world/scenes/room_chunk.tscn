@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://b2x7r8qaq8n6"]
+
+[ext_resource type="Material" uid="uid://t7bds6aj7mmm" path="res://art/prototype_grid.tres" id="1_grid"]
+[ext_resource type="PackedScene" uid="uid://c3m7yab1t4a2p" path="res://scenes/enemies/elephant_enemy.tscn" id="2_e88tu"]
+
+[node name="RoomChunk" type="Node3D" unique_id=178345349]
+
+[node name="LevelGeometry" type="CSGCombiner3D" parent="." unique_id=82610982]
+transform = Transform3D(2.7, 0, 0, 0, 4.44, 0, 0, 0, 3.4, 0, 0, 0)
+use_collision = true
+
+[node name="RoomShell" type="CSGBox3D" parent="LevelGeometry" unique_id=632982475]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.99999976, 0, 2.4999998, 0)
+size = Vector3(12, 7, 12)
+material = ExtResource("1_grid")
+
+[node name="RoomInterior" type="CSGBox3D" parent="LevelGeometry" unique_id=2117116221]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.25, 0)
+operation = 2
+size = Vector3(11, 5.5, 11)
+material = ExtResource("1_grid")
+
+[node name="Doorway" type="CSGBox3D" parent="LevelGeometry" unique_id=52628179]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.99999976, 0.24999997, 0.9999999, 5.5)
+operation = 2
+size = Vector3(3, 1, 1)
+material = ExtResource("1_grid")
+
+[node name="Window" type="CSGBox3D" parent="LevelGeometry" unique_id=762227184]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.99999976, 5.75, 3.7747748, 2.470588)
+operation = 2
+size = Vector3(1, 2, 2)
+material = ExtResource("1_grid")
+
+[node name="Window2" type="CSGBox3D" parent="LevelGeometry" unique_id=429033234]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.99999976, 5.75, 3.7747748, -2.5294118)
+operation = 2
+size = Vector3(1, 2, 2)
+material = ExtResource("1_grid")
+
+[node name="ElephantEnemy" parent="." unique_id=1671382912 instance=ExtResource("2_e88tu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 7, -5)

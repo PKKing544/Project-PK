@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="AbilityData" format=3 uid="uid://df7j8lal0m1p4"]
+
+[ext_resource type="Script" path="res://scripts/weapons/data/ability_data.gd" id="1_ability"]
+
+[resource]
+script = ExtResource("1_ability")
+ability_name = "Default Ability"
+cooldown_sec = 3.0
+ink_cost = 0.0

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="TerrainSettings" format=3 uid="uid://cpkq6ct212vjm"]
+
+[ext_resource type="Script" path="res://scripts/world/terrain_settings.gd" id="1_noise"]
+
+[resource]
+script = ExtResource("1_noise")
+seed = 1665
+frequency = 0.002
+height_scale = 60.0
+quantization = 0.5
+resolution = 5.0

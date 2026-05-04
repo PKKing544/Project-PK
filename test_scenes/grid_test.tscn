@@ -1,0 +1,87 @@
+[gd_scene format=3 uid="uid://khpmg3v7pec7"]
+
+[ext_resource type="PackedScene" uid="uid://bubiarododkth" path="res://core/player/Player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://c7xeht7lxh7su" path="res://scripts/world/world_manager.gd" id="2_world"]
+[ext_resource type="Material" uid="uid://t7bds6aj7mmm" path="res://art/prototype_grid.tres" id="3_px7vw"]
+[ext_resource type="Script" uid="uid://cvttsldyxoncg" path="res://scripts/world/terrain_settings.gd" id="3_ydil4"]
+[ext_resource type="PackedScene" uid="uid://c3m7yab1t4a2p" path="res://scenes/enemies/elephant_enemy.tscn" id="5_t5rmt"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/basic_enemy.tscn" id="6_rirtd"]
+[ext_resource type="PackedScene" uid="uid://bfw64e8pvwh46" path="res://scenes/enemies/axolotl_enemy.tscn" id="7_01hy8"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
+sky_top_color = Color(0.075875096, 0.29122037, 0.416157, 1)
+sky_horizon_color = Color(0.34254786, 0.39806825, 0.29805228, 1)
+sky_cover_modulate = Color(1.2742168, 1.2742168, 1.2742168, 1)
+ground_bottom_color = Color(0.46, 0.41959667, 0.3174, 1)
+ground_horizon_color = Color(1, 0.9666667, 0, 1)
+ground_curve = 0.0035355412
+
+[sub_resource type="Sky" id="Sky"]
+sky_material = SubResource("SkyMat")
+
+[sub_resource type="Environment" id="Env"]
+background_mode = 2
+background_energy_multiplier = 4.97
+sky = SubResource("Sky")
+ambient_light_sky_contribution = 0.1
+ambient_light_energy = 2.56
+tonemap_mode = 3
+tonemap_exposure = 0.9
+glow_enabled = true
+glow_intensity = 1.0
+glow_strength = 0.67
+fog_enabled = true
+fog_light_color = Color(5.583167e-06, 0.5303515, 0.7418824, 1)
+fog_density = 0.0011
+fog_aerial_perspective = 0.414
+fog_sky_affect = 0.0
+
+[sub_resource type="Resource" id="Resource_t5rmt"]
+script = ExtResource("3_ydil4")
+seed = 1665
+frequency = 0.002
+height_scale = 60.0
+
+[node name="GridTestWorld" type="Node3D" unique_id=260458957]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1585355284]
+environment = SubResource("Env")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=628715512]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 40, 0)
+shadow_enabled = true
+
+[node name="Player" parent="." unique_id=1092714563 groups=["player"] instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+invincibility_duration = 0.4
+
+[node name="WorldManager" type="Node3D" parent="." unique_id=835541242 node_paths=PackedStringArray("player")]
+script = ExtResource("2_world")
+view_bias = 60.0
+terrain_settings = SubResource("Resource_t5rmt")
+player = NodePath("../Player")
+
+[node name="LevelGeometry" type="CSGCombiner3D" parent="." unique_id=172958449]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -370, 0)
+use_collision = true
+
+[node name="InitialFloor" type="CSGBox3D" parent="LevelGeometry" unique_id=1427254998]
+transform = Transform3D(1.0161587, 0, 0, 0, 1, 0, 0, 0, 1, 0, 369.5, 0)
+material_override = ExtResource("3_px7vw")
+size = Vector3(1, 2, 1)
+material = ExtResource("3_px7vw")
+
+[node name="ElephantEnemy" parent="." unique_id=1839823746 instance=ExtResource("5_t5rmt")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 109, 39, 45)
+
+[node name="ElephantEnemy2" parent="." unique_id=280533684 instance=ExtResource("5_t5rmt")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -52, 7, 37)
+
+[node name="ElephantEnemy3" parent="." unique_id=1174916220 instance=ExtResource("5_t5rmt")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 8, -14)
+
+[node name="BasicEnemy" parent="." unique_id=1717088046 instance=ExtResource("6_rirtd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 1, 0)
+
+[node name="AxolotlEnemy" parent="." unique_id=1904918539 instance=ExtResource("7_01hy8")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 1, -19)

@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="DashData" format=3 uid="uid://df7j8lal0m1p5"]
+
+[ext_resource type="Script" uid="uid://ccv7ig4hlo72m" path="res://scripts/weapons/data/dash_data.gd" id="1_dash"]
+
+[resource]
+script = ExtResource("1_dash")
+dash_name = "Quick Dash"
+speed = 35.0

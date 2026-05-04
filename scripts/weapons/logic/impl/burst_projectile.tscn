@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://bhyunccofy36y"]
+
+[ext_resource type="Script" uid="uid://dbjcfnq7b63mv" path="res://scripts/weapons/logic/impl/burst_projectile.gd" id="1_burst"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_hitbox"]
+radius = 0.3
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_burst"]
+albedo_color = Color(0.24666671, 0, 0.4, 1)
+emission_enabled = true
+emission = Color(0.84244716, 0.7581754, 1, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_visual"]
+material = SubResource("StandardMaterial3D_burst")
+radius = 0.3
+height = 0.6
+
+[node name="BurstProjectile" type="Area3D" unique_id=673248275]
+collision_layer = 0
+script = ExtResource("1_burst")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=585681196]
+transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, 0, 0, 0)
+shape = SubResource("SphereShape3D_hitbox")
+debug_color = Color(0.05953528, 0.6608992, 0.81241894, 0.41960785)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=833181951]
+mesh = SubResource("SphereMesh_visual")

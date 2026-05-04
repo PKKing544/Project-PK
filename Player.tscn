@@ -1,0 +1,70 @@
+[gd_scene format=3 uid="uid://diygwv781k3tm"]
+
+[ext_resource type="Script" path="res://core/player/player.gd" id="1_script"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_shape"]
+
+[node name="Player" type="CharacterBody3D" unique_id=1410803413]
+script = ExtResource("1_script")
+acceleration = 40.0
+jump_velocity = 13.0
+gravity = 38.0
+ground_pound_speed = -30.0
+wall_run_tilt = 45.0
+melee_light_boost = 0.0
+melee_light_damage = 3.0
+base_swing_duration = 0.15
+base_pogo_bounce = 15.0
+hitbox_size_light = Vector3(1, 2, 2)
+hitbox_size_heavy = Vector3(1.5, 2.3, 2.3)
+hitbox_offset = Vector3(0, -0.65, -0.35)
+camera_follow_speed = 20.0
+base_fov = 53.0
+jump_fov = 60.0
+shoot_fov = 38.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1487551476]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_shape")
+
+[node name="Visuals" type="Node3D" parent="." unique_id=628135694]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.755, 0)
+
+[node name="BaseSprite" type="Sprite3D" parent="Visuals" unique_id=756502630]
+pixel_size = 0.005
+billboard = 2
+texture_filter = 0
+
+[node name="AimSetup" type="Node3D" parent="Visuals" unique_id=1924337820]
+
+[node name="Pkbody" type="Sprite3D" parent="Visuals/AimSetup" unique_id=1003903649]
+pixel_size = 0.005
+billboard = 2
+texture_filter = 0
+
+[node name="Pkarm" type="Sprite3D" parent="Visuals/AimSetup" unique_id=372298915]
+pixel_size = 0.005
+billboard = 2
+texture_filter = 0
+
+[node name="Pkhand" type="Sprite3D" parent="Visuals/AimSetup" unique_id=1096873207]
+pixel_size = 0.005
+billboard = 2
+texture_filter = 0
+
+[node name="CameraPivot" type="Node3D" parent="." unique_id=549395319]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.48, 0)
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraPivot" unique_id=233426966]
+spring_length = 4.0
+margin = 0.2
+
+[node name="Camera3D" type="Camera3D" parent="CameraPivot/SpringArm3D" unique_id=1761026531]
+h_offset = -0.005
+v_offset = -0.555
+current = true
+fov = 35.3
+near = 0.001
+
+[node name="AimRayCast" type="RayCast3D" parent="CameraPivot/SpringArm3D/Camera3D" unique_id=2005298227]
+target_position = Vector3(0, 0, -100)
