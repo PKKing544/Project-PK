@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c3m7yab1t4a2p"]
 
-[ext_resource type="Script" path="res://scripts/enemies/elephant_enemy.gd" id="1_elephant"]
+[ext_resource type="Script" uid="uid://ci0hwvjjodfac" path="res://scripts/enemies/elephant_enemy.gd" id="1_elephant"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 radius = 1.0
@@ -23,8 +23,9 @@ height = 0.5
 
 [node name="ElephantEnemy" type="CharacterBody3D" unique_id=1671382912 groups=["enemy"]]
 script = ExtResource("1_elephant")
-knockback_weight = 300.0
 bubble_range = 50.0
+knockback_weight = 500.0
+base_color = Color(0.19169998, 0.5545099, 0.71, 1)
 
 [node name="CollisionShape" type="CollisionShape3D" parent="." unique_id=751698217]
 transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 0, 0)

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bubiarododkth"]
 
-[ext_resource type="Script" uid="uid://dm3iivm62xbr" path="res://core/player/player.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://vpwsuv6flxpl" path="res://core/player/player.gd" id="1_script"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_shape"]
 
@@ -14,6 +14,7 @@ wall_run_tilt = 45.0
 melee_light_boost = 0.0
 melee_light_damage = 3.0
 base_swing_duration = 0.15
+base_lunge_window_ratio = 0.1
 base_pogo_bounce = 15.0
 hitbox_size_light = Vector3(1, 2, 2)
 hitbox_size_heavy = Vector3(1.5, 2.3, 2.3)

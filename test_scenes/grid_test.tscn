@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://khpmg3v7pec7"]
 
 [ext_resource type="PackedScene" uid="uid://bubiarododkth" path="res://core/player/Player.tscn" id="1_player"]
-[ext_resource type="Script" uid="uid://c7xeht7lxh7su" path="res://scripts/world/world_manager.gd" id="2_world"]
+[ext_resource type="Script" uid="uid://wii3xbr52oem" path="res://scripts/world/world_manager.gd" id="2_world"]
 [ext_resource type="Material" uid="uid://t7bds6aj7mmm" path="res://art/prototype_grid.tres" id="3_px7vw"]
-[ext_resource type="Script" uid="uid://cvttsldyxoncg" path="res://scripts/world/terrain_settings.gd" id="3_ydil4"]
+[ext_resource type="Script" uid="uid://clokunsiwfnff" path="res://scripts/world/terrain_settings.gd" id="3_ydil4"]
 [ext_resource type="PackedScene" uid="uid://c3m7yab1t4a2p" path="res://scenes/enemies/elephant_enemy.tscn" id="5_t5rmt"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/basic_enemy.tscn" id="6_rirtd"]
 [ext_resource type="PackedScene" uid="uid://bfw64e8pvwh46" path="res://scenes/enemies/axolotl_enemy.tscn" id="7_01hy8"]
@@ -21,10 +21,10 @@ sky_material = SubResource("SkyMat")
 
 [sub_resource type="Environment" id="Env"]
 background_mode = 2
-background_energy_multiplier = 4.97
+background_energy_multiplier = 1.0
 sky = SubResource("Sky")
 ambient_light_sky_contribution = 0.1
-ambient_light_energy = 2.56
+ambient_light_energy = 1.0
 tonemap_mode = 3
 tonemap_exposure = 0.9
 glow_enabled = true
@@ -38,7 +38,7 @@ fog_sky_affect = 0.0
 
 [sub_resource type="Resource" id="Resource_t5rmt"]
 script = ExtResource("3_ydil4")
-seed = 1665
+generation_seed = 1665
 frequency = 0.002
 height_scale = 60.0
 

@@ -7,15 +7,12 @@
 [ext_resource type="PackedScene" uid="uid://c3m7yab1t4a2p" path="res://scenes/enemies/elephant_enemy.tscn" id="5_t5rmt"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/basic_enemy.tscn" id="6_rirtd"]
 [ext_resource type="PackedScene" uid="uid://bfw64e8pvwh46" path="res://scenes/enemies/axolotl_enemy.tscn" id="7_01hy8"]
-[ext_resource type="PackedScene" path="res://test_scenes/dummy.tscn" id="8_lhrmo"]
+[ext_resource type="PackedScene" uid="uid://dweam8vv0s26l" path="res://test_scenes/dummy.tscn" id="8_lhrmo"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.075875096, 0.29122037, 0.416157, 1)
 sky_horizon_color = Color(0.34254786, 0.39806825, 0.29805228, 1)
-sky_cover_modulate = Color(1.2742168, 1.2742168, 1.2742168, 1)
-ground_bottom_color = Color(0.46, 0.41959667, 0.3174, 1)
-ground_horizon_color = Color(1, 0.9666667, 0, 1)
-ground_curve = 0.0035355412
+ground_horizon_color = Color(0.1836, 0.33804002, 0.54, 1)
 
 [sub_resource type="Sky" id="Sky"]
 sky_material = SubResource("SkyMat")
@@ -32,7 +29,7 @@ glow_enabled = true
 glow_intensity = 1.0
 glow_strength = 0.67
 fog_enabled = true
-fog_light_color = Color(5.583167e-06, 0.5303515, 0.7418824, 1)
+fog_light_color = Color(0.25010002, 0.3880616, 0.61, 1)
 fog_density = 0.0011
 fog_aerial_perspective = 0.414
 fog_sky_affect = 0.0
@@ -54,6 +51,8 @@ shadow_enabled = true
 [node name="Player" parent="." unique_id=1092714563 groups=["player"] instance=ExtResource("1_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 speed = 14.0
+slide_friction = 400.0
+slide_jump_multi = 1.2
 invincibility_duration = 0.4
 jump_fov = 80.0
 

@@ -8,6 +8,7 @@ extends CharacterBody3D # Character controller
 @export var coyote_time := 0.15
 @export var jump_buffer_time := 0.15
 @export var gravity := 35.0
+@export var max_speed_multi := 5.0 # Safety net: Max speed as a multiplier of base speed
 
 # New Mechanics 
 @export var sneak_speed_multi := 0.2
@@ -18,6 +19,7 @@ extends CharacterBody3D # Character controller
 @export var wall_slide_speed := -2.0
 @export var ground_pound_speed := -40.0
 @export var wall_run_tilt := 25.0 # Degrees
+@export var slide_slope_threshold_deg := 5.0 # Minimum slope angle to trigger slide instead of crouch
 
 @export_group("Melee - Base Tap")
 @export var melee_light_boost := 10.0
@@ -108,6 +110,7 @@ var hand_manager: HandManager
 var is_sneaking = false
 var is_sliding = false
 var current_slide_speed = 0.0
+var initial_slide_speed = 0.0
 
 var can_air_dash = true
 var wall_latch = false
@@ -127,6 +130,7 @@ var melee_swing_timer = 0.0
 var melee_active_swing_duration = 0.25
 var melee_is_heavy = false
 var has_pogoed_this_swing = false
+var long_jump_timer := 0.0 # Grace period to prevent ground-pound during a long jump
 var melee_hitbox: Area3D
 var melee_hitbox_shape: BoxShape3D
 var melee_hitbox_debug_mesh: MeshInstance3D
@@ -316,20 +320,20 @@ func _input(event):
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _physics_process(delta):
-	# Update Debug UI
-	if debug_ui_label and hand_manager:
-		var max_ink = hand_manager.current_hand.max_ink if hand_manager.current_hand else 0.0
-		var att_status = "ON" if is_attachment_active else "OFF"
-		var horiz_vel = Vector3(velocity.x, 0, velocity.z).length()
-		debug_ui_label.text = "Speed: %.1f m/s\nInk: %.1f / %.1f\nCharge: %.2fs\nAtt: %s" % [horiz_vel, hand_manager.current_ink, max_ink, hand_manager.charge_accumulated, att_status]
-
 	# Timers
+	if long_jump_timer > 0:
+		long_jump_timer -= delta
+		
 	if invincibility_timer > 0:
 		invincibility_timer -= delta
 		# Visual flickering for I-frames
 		visuals.visible = fmod(invincibility_timer, 0.1) > 0.05
 	else:
 		visuals.visible = true
+		
+	# Input Direction - Calculated early so all systems can access it
+	var input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+	var move_dir = (camera_pivot.transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 		
 	if flash_timer > 0:
 		flash_timer -= delta
@@ -491,7 +495,7 @@ func _physics_process(delta):
 					velocity.y -= gravity * delta
 		else:
 			is_wall_running = false
-			if crouch_pressed:
+			if crouch_pressed and long_jump_timer <= 0:
 				velocity.y = ground_pound_speed
 			elif not is_swinging_melee:
 				velocity.y -= gravity * delta
@@ -506,7 +510,30 @@ func _physics_process(delta):
 
 	if jump_buffer_timer > 0:
 		if is_on_floor() or coyote_timer > 0:
-			velocity.y = jump_velocity * (slide_jump_multi if is_sliding else 1.0)
+			var current_spd = Vector3(velocity.x, 0, velocity.z).length()
+			var long_jump_eligible = is_sliding or (crouch_pressed and current_spd > speed + 1.0)
+			
+			if long_jump_eligible:
+				# Long Jump: Jumping while sliding at high speeds
+				# Hold Control for a low, fast arc; Release for a high, floating arc
+				var jump_arc_multi = 0.65 if crouch_pressed else 1.2
+				velocity.y = jump_velocity * jump_arc_multi
+				
+				# Set a small grace period where holding Control won't trigger a ground-pound
+				if crouch_pressed:
+					long_jump_timer = 0.5 
+				
+				# Give a massive horizontal speed boost based on slide momentum
+				var hz_boost = 1.4 # 40% extra horizontal kick
+				velocity.x *= hz_boost
+				velocity.z *= hz_boost
+				
+				# Add a flat forward "leap" force to ensure it always feels powerful
+				velocity += move_dir * 15.0
+			else:
+				# Normal jump
+				velocity.y = jump_velocity
+				
 			jump_buffer_timer = 0.0
 			coyote_timer = 0.0
 		elif touching_wall:
@@ -545,31 +572,77 @@ func _physics_process(delta):
 					velocity.x = hz_vel.x
 					velocity.z = hz_vel.z
 
+
+	
 	# Slope Detection
 	var slope_angle = 0.0
 	var is_on_slope = false
+	var floor_normal = Vector3.UP
 	if is_on_floor():
-		slope_angle = get_floor_normal().angle_to(Vector3.UP)
-		if slope_angle > 0.05:
+		floor_normal = get_floor_normal()
+		slope_angle = floor_normal.angle_to(Vector3.UP)
+		if slope_angle > deg_to_rad(slide_slope_threshold_deg):
 			is_on_slope = true
-
+	
+	var slope_factor = move_dir.dot(floor_normal) if is_on_floor() else 0.0
+	
 	# Ground Sneak and Slide logic
 	is_sneaking = false
 	if crouch_pressed and is_on_floor():
-		if is_on_slope:
+		# Maintain slide even on flat ground if we have high momentum
+		var can_slide = is_on_slope or (is_sliding and current_slide_speed > speed + 1.0)
+		
+		if can_slide:
 			if not is_sliding:
 				is_sliding = true
-				current_slide_speed = speed + slide_boost
+				var current_hz_speed_init = Vector3(velocity.x, 0, velocity.z).length()
+				current_slide_speed = max(current_hz_speed_init, speed + slide_boost)
+				initial_slide_speed = current_slide_speed
 		else:
 			is_sneaking = true
 			is_sliding = false
-			
-	if not crouch_pressed and not is_on_slope:
+	else:
+		# If we were sliding and released Control, return to run speed
+		if is_sliding:
+			var hz_vel = Vector3(velocity.x, 0, velocity.z)
+			if hz_vel.length() > speed:
+				var clamped = hz_vel.normalized() * speed
+				velocity.x = clamped.x
+				velocity.z = clamped.z
 		is_sliding = false
 
+	# Slide Funneling (Gravity pulling you down slopes)
+	# Only funnel if we are actually moving downhill (slope_factor > 0)
+	if is_sliding and is_on_slope and slope_factor > 0.0:
+		var downhill_dir = (Vector3.DOWN - floor_normal * Vector3.DOWN.dot(floor_normal)).normalized()
+		
+		# Reduced funneling strength so the player can steer away from the downhill path
+		var funnel_strength = clamp(current_slide_speed / (speed + slide_boost), 0.1, 0.4)
+		if move_dir != Vector3.ZERO:
+			move_dir = move_dir.lerp(downhill_dir, funnel_strength).normalized()
+		else:
+			move_dir = downhill_dir
+
 	if is_sliding:
-		current_slide_speed -= slide_friction * delta
-		current_slide_speed = max(current_slide_speed, speed) 
+		# Calculate dynamic friction based on slope
+		var dynamic_friction = slide_friction
+		
+		if slope_factor < -0.01:
+			# Going uphill: Increase friction to drain momentum (much more forgiving now)
+			dynamic_friction -= slope_factor * 80.0
+		elif slope_factor > 0.15:
+			# Going downhill: More gradual acceleration (negative friction)
+			# Only triggers on slopes steeper than ~8.6 degrees
+			dynamic_friction = -12.0 - (slope_factor * 60.0)
+			
+		current_slide_speed -= dynamic_friction * delta
+		
+		# If going uphill, we lose all momentum and drop to a crawl (sneak speed). 
+		# If flat or downhill, we maintain at least walking speed.
+		var min_speed = (speed * sneak_speed_multi) if slope_factor < -0.05 else speed
+		
+		# Uncapped downhill speed - let the momentum build like water!
+		current_slide_speed = max(current_slide_speed, min_speed)
 
 	var target_speed = speed
 	if is_dashing or is_wall_running:
@@ -580,10 +653,6 @@ func _physics_process(delta):
 		target_speed = speed * sneak_speed_multi
 	elif is_charging_melee and is_on_floor():
 		target_speed = speed * melee_charge_slow
-
-	# Input Direction
-	var input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
-	var move_dir = (camera_pivot.transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	
 	# Skater Camera Tilt (Procedural Roll)
 	var target_roll = 0.0
@@ -619,10 +688,11 @@ func _physics_process(delta):
 		if not is_on_floor(): accel *= 0.5
 		if is_dashing: accel = 2000.0 
 		if is_sneaking: accel = 500.0 
+		if is_sliding: accel = 1000.0
 		
-		# Only accelerate if we are below target speed, or if we are changing direction
+		# Always apply slide speed changes IF ON FLOOR, otherwise only accelerate if below target or turning
 		var dot = move_dir.dot(Vector3(velocity.x, 0, velocity.z).normalized())
-		if current_hz_speed < target_speed or dot < 0.5:
+		if (is_sliding and is_on_floor()) or current_hz_speed < target_speed or dot < 0.5:
 			velocity.x = move_toward(velocity.x, move_dir.x * target_speed, accel * delta)
 			velocity.z = move_toward(velocity.z, move_dir.z * target_speed, accel * delta)
 	else:
@@ -636,6 +706,16 @@ func _physics_process(delta):
 		velocity.x = move_toward(velocity.x, 0, fric * delta)
 		velocity.z = move_toward(velocity.z, 0, fric * delta)
 
+	# Safety net: Global speed cap (Horizontal only)
+	var global_max_speed = speed * max_speed_multi
+	var hz_vel_current = Vector3(velocity.x, 0, velocity.z)
+	if hz_vel_current.length() > global_max_speed:
+		var clamped_hz = hz_vel_current.normalized() * global_max_speed
+		velocity.x = clamped_hz.x
+		velocity.z = clamped_hz.z
+
+	# Increase floor snap to keep player glued to slopes during fast slides
+	floor_snap_length = 0.5 if is_sliding else 0.1
 	move_and_slide()
 	
 	if is_sliding and current_slide_speed <= speed + 0.1 and not is_on_slope:
@@ -661,9 +741,21 @@ func _physics_process(delta):
 		else:
 			target_fov = jump_fov
 	
+	# Add speed-based FOV scaling (highly noticeable when sliding downhill)
+	var speed_bonus = max(0.0, current_hz_speed - speed)
+	target_fov += speed_bonus * 1.5 # 1.5 FOV units per m/s above walk speed
+	
 	if aim_mode or zoom_linger_timer > 0:
 		target_fov = shoot_fov
 	camera.fov = lerp(camera.fov, target_fov, delta * fov_lerp_speed)
+	
+	# Update Debug UI at the end of the frame
+	if debug_ui_label and hand_manager:
+		var max_ink = hand_manager.current_hand.max_ink if hand_manager.current_hand else 0.0
+		var att_status = "ON" if is_attachment_active else "OFF"
+		var horiz_vel = Vector3(velocity.x, 0, velocity.z).length()
+		var long_jump_text = " [LONG JUMP!]" if long_jump_timer > 0 else ""
+		debug_ui_label.text = "Speed: %.1f (Tgt: %.1f) m/s%s\nInk: %.1f / %.1f\nCharge: %.2fs\nAtt: %s" % [horiz_vel, target_speed, long_jump_text, hand_manager.current_ink, max_ink, hand_manager.charge_accumulated, att_status]
 	
 	var is_on_wall_visual = touching_wall 
 	update_visuals(input_dir, is_on_wall_visual, wall_normal)
@@ -857,7 +949,7 @@ func _apply_melee_hit(target: Node, damage: float, force: float, hitstop: float)
 					size_mult = clamp(avg_scale, 0.8, 1.4)
 					
 				if "has_bubble" in target and target.has_bubble:
-					size_mult *= 2.5 # MASSIVELY increases pogo bounce
+					size_mult *= 2.2 # MASSIVELY increases pogo bounce
 					impact_normal = Vector3.UP # Force perfectly upward bounce
 					velocity.y = max(0, velocity.y) # Erase falling velocity so it's always a huge bounce
 				

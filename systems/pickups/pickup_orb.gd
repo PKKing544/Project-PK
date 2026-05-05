@@ -11,7 +11,7 @@ var velocity: Vector3 = Vector3.ZERO
 var magnet_speed: float = 0.0
 
 func _ready():
-	# Initial "pop" animation when spawned
+	# Initial "pop" animation when spawnedd
 	velocity = Vector3(randf_range(-2, 2), randf_range(4, 7), randf_range(-2, 2))
 	
 	# Visual setup based on type

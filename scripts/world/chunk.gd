@@ -84,6 +84,11 @@ func _generate_terrain():
 	st.generate_normals()
 	terrain_mesh.mesh = st.commit()
 	
+	# Apply the green grid shader material to the generated terrain
+	var grid_mat = load("res://art/prototype_grid.tres")
+	if grid_mat:
+		terrain_mesh.material_override = grid_mat
+	
 	# Create static collision
 	terrain_mesh.create_trimesh_collision()
 	# The auto-created collision is a child of the mesh instance
