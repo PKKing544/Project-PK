@@ -5,4 +5,5 @@
 [resource]
 script = ExtResource("1_dash")
 dash_name = "Quick Dash"
-speed = 35.0
+speed = 20.0
+duration_sec = 0.2

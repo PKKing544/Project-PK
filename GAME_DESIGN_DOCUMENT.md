@@ -169,6 +169,7 @@ The movement system is modeled after games like *Titanfall 2* and *Ultrakill* â€
 | `dash_speed` | 60.0 | Horizontal speed during a dash |
 | `ground_pound_speed` | -10.0 | Downward velocity on ground pound |
 | `melee_up_boost` | 15.0 | Upward velocity added by heavy melee |
+| `max_speed_multi` | 5.0 | Safety net: Max horizontal speed (multiplier of `speed`) |
 | `max_camera_roll` | (exported) | Max camera lean angle on strafing |
 | `zoom_linger_timer` | 0.5s | How long aim-zoom persists after firing |
 
@@ -188,8 +189,19 @@ The movement system is modeled after games like *Titanfall 2* and *Ultrakill* â€
 
 #### Sliding
 - Triggered by holding `Crouch/Sneak` while moving on the ground.
-- The player slides on slopes automatically; on flat ground it requires `crouch_pressed`.
-- A known design consideration: the slide exit logic was simplified to the check at the correct line; the dead `else: pass` branch was removed.
+- **High-Velocity Mechanics**: 
+    - **Downhill Momentum**: Slopes steeper than 8.6Â° (`slope_factor > 0.15`) provide aggressive, uncapped acceleration. Speed builds gradually based on the steepness.
+    - **Funneling**: Subtle steering pull towards the steepest downhill vector while moving downhill.
+    - **Momentum Preservation**: If speed is high (> `speed + 1.0`), the slide can continue even on flat ground as long as the button is held, allowing players to "coast."
+- **State Transition**: Transitions to Sneaking once speed drops below the momentum threshold.
+
+#### Long Jumping
+- **Trigger**: Jumping while sliding at speeds exceeding the base run speed (12m/s).
+- **Variations**:
+    - **Low Arc (Hold Control)**: Height is 65% of base. Fast, horizontal trajectory for clearing massive horizontal gaps.
+    - **High Arc (Release Control)**: Height is 120% of base. Lofty, vertical trajectory for converting speed into height.
+- **Boost**: Grants a 1.4x horizontal momentum multiplier + a flat 15m/s forward leap force.
+- **Ground Pound Conflict**: Triggers a **0.5s grace period** (`long_jump_timer`) during which the Ground Pound mechanic is disabled. This allows the player to hold Control for a Low Arc jump without accidentally fast-falling.
 
 #### Wall Mechanics
 - **Wall Latch:** Crouch while touching a wall to latch on (negates gravity).

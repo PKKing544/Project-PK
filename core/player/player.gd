@@ -9,11 +9,12 @@ extends CharacterBody3D # Character controller
 @export var jump_buffer_time := 0.15
 @export var gravity := 35.0
 @export var max_speed_multi := 5.0 # Safety net: Max speed as a multiplier of base speed
+@export var short_hop_multi := 0.35 # How much upward velocity is kept on early jump release (short hop)
 
 # New Mechanics 
 @export var sneak_speed_multi := 0.2
 @export var slide_boost := 10.0
-@export var slide_friction := 15.0
+@export var slide_friction := 4.0
 @export var slide_jump_multi := 1.5
 
 @export var wall_slide_speed := -2.0
@@ -389,10 +390,10 @@ func _physics_process(delta):
 		coyote_timer = coyote_time
 		current_air_jumps = max_air_jumps
 		
-		# B-hopping verification on landing
-		if not was_on_floor_last_frame and not is_dashing and not crouch_pressed:
+		# Clamp to run speed on landing (unless actively sliding)
+		if not was_on_floor_last_frame and not crouch_pressed:
 			var curr_hz = Vector3(velocity.x, 0, velocity.z)
-			if curr_hz.length() > speed * 1.5:
+			if curr_hz.length() > speed:
 				curr_hz = curr_hz.normalized() * speed
 				velocity.x = curr_hz.x
 				velocity.z = curr_hz.z
@@ -507,13 +508,19 @@ func _physics_process(delta):
 		jump_buffer_timer = jump_buffer_time
 	elif jump_buffer_timer > 0:
 		jump_buffer_timer -= delta
+	
+	# Variable Jump Height (Short Hop): Cut upward velocity when jump is released early
+	if Input.is_action_just_released("jump") and velocity.y > 0 and not is_on_floor():
+		velocity.y *= short_hop_multi
 
 	if jump_buffer_timer > 0:
 		if is_on_floor() or coyote_timer > 0:
 			var current_spd = Vector3(velocity.x, 0, velocity.z).length()
-			var long_jump_eligible = is_sliding or (crouch_pressed and current_spd > speed + 1.0)
+			# Even more permissive: check for high speed + crouch button directly
+			var long_jump_eligible = is_sliding or (Input.is_action_pressed("sneak") and current_spd > speed + 0.1)
 			
 			if long_jump_eligible:
+				print("LONG JUMP TRIGGERED! Speed: ", current_spd)
 				# Long Jump: Jumping while sliding at high speeds
 				# Hold Control for a low, fast arc; Release for a high, floating arc
 				var jump_arc_multi = 0.65 if crouch_pressed else 1.2
@@ -523,13 +530,14 @@ func _physics_process(delta):
 				if crouch_pressed:
 					long_jump_timer = 0.5 
 				
-				# Give a massive horizontal speed boost based on slide momentum
-				var hz_boost = 1.4 # 40% extra horizontal kick
+				# Give a horizontal speed boost based on slide momentum
+				var hz_boost = 1.1 # 10% extra horizontal kick
 				velocity.x *= hz_boost
 				velocity.z *= hz_boost
 				
-				# Add a flat forward "leap" force to ensure it always feels powerful
-				velocity += move_dir * 15.0
+				# Add a flat forward "leap" force — use velocity dir if no input is held
+				var leap_dir = move_dir if move_dir != Vector3.ZERO else Vector3(velocity.x, 0, velocity.z).normalized()
+				velocity += leap_dir * 10.0
 			else:
 				# Normal jump
 				velocity.y = jump_velocity
@@ -602,8 +610,9 @@ func _physics_process(delta):
 			is_sneaking = true
 			is_sliding = false
 	else:
-		# If we were sliding and released Control, return to run speed
-		if is_sliding:
+		# If we were sliding and released Control (or jumped), return to run speed
+		# BUT skip clamping if we just did a long jump — preserve the momentum!
+		if is_sliding and long_jump_timer <= 0:
 			var hz_vel = Vector3(velocity.x, 0, velocity.z)
 			if hz_vel.length() > speed:
 				var clamped = hz_vel.normalized() * speed
@@ -688,7 +697,11 @@ func _physics_process(delta):
 		if not is_on_floor(): accel *= 0.5
 		if is_dashing: accel = 2000.0 
 		if is_sneaking: accel = 500.0 
-		if is_sliding: accel = 1000.0
+		if is_sliding:
+			# Smoothly scale down accel the steeper uphill you go
+			# slope_factor is negative uphill; clamp to 0..1 range for lerp
+			var uphill_t = clamp(-slope_factor * 10.0, 0.0, 1.0)
+			accel = lerp(1000.0, 80.0, uphill_t)
 		
 		# Always apply slide speed changes IF ON FLOOR, otherwise only accelerate if below target or turning
 		var dot = move_dir.dot(Vector3(velocity.x, 0, velocity.z).normalized())

@@ -9,6 +9,7 @@ script = ExtResource("1_script")
 acceleration = 40.0
 jump_velocity = 13.0
 gravity = 38.0
+short_hop_multi = 0.2
 ground_pound_speed = -30.0
 wall_run_tilt = 45.0
 melee_light_boost = 0.0
