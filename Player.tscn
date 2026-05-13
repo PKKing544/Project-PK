@@ -1,6 +1,10 @@
 [gd_scene format=3 uid="uid://diygwv781k3tm"]
 
 [ext_resource type="Script" uid="uid://vpwsuv6flxpl" path="res://core/player/player.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://art/idle.png" id="2_idle"]
+[ext_resource type="Texture2D" path="res://art/Pkbody.png" id="3_pkbody"]
+[ext_resource type="Texture2D" path="res://art/pkarm.png" id="4_pkarm"]
+[ext_resource type="Texture2D" path="res://art/Pkhand.png" id="5_pkhand"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_shape"]
 
@@ -35,6 +39,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.755, 0)
 pixel_size = 0.005
 billboard = 2
 texture_filter = 0
+texture = ExtResource("2_idle")
 
 [node name="AimSetup" type="Node3D" parent="Visuals" unique_id=1924337820]
 
@@ -42,16 +47,19 @@ texture_filter = 0
 pixel_size = 0.005
 billboard = 2
 texture_filter = 0
+texture = ExtResource("3_pkbody")
 
 [node name="Pkarm" type="Sprite3D" parent="Visuals/AimSetup" unique_id=372298915]
 pixel_size = 0.005
 billboard = 2
 texture_filter = 0
+texture = ExtResource("4_pkarm")
 
 [node name="Pkhand" type="Sprite3D" parent="Visuals/AimSetup" unique_id=1096873207]
 pixel_size = 0.005
 billboard = 2
 texture_filter = 0
+texture = ExtResource("5_pkhand")
 
 [node name="CameraPivot" type="Node3D" parent="." unique_id=549395319]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.48, 0)

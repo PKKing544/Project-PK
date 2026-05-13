@@ -1,6 +1,6 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://dvyb6l8oe2m5b"]
 
-[ext_resource type="Script" path="res://scripts/enemies/projectiles/fireball.gd" id="1_fb"]
+[ext_resource type="Script" uid="uid://cxmd0hkqyvnvi" path="res://scripts/enemies/projectiles/fireball.gd" id="1_fb"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_1"]
 radius = 0.25
@@ -8,19 +8,20 @@ radius = 0.25
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
 albedo_color = Color(1, 0.2, 0, 1)
 emission_enabled = true
-emission = Color(1, 0.2, 0, 1)
+emission = Color(1, 0.5693333, 0.24000001, 1)
 emission_energy_multiplier = 3.0
 
 [sub_resource type="SphereMesh" id="SphereMesh_1"]
 material = SubResource("StandardMaterial3D_1")
-radius = 0.5
-height = 1.0
 
-[node name="Fireball" type="Area3D"]
+[node name="Fireball" type="Area3D" unique_id=100121824]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0)
 script = ExtResource("1_fb")
+homing_strength = 6.0
 
-[node name="CollisionShape" type="CollisionShape3D" parent="."]
+[node name="CollisionShape" type="CollisionShape3D" parent="." unique_id=345221804]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
 shape = SubResource("SphereShape3D_1")
 
-[node name="Mesh" type="MeshInstance3D" parent="."]
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=2085767606]
 mesh = SubResource("SphereMesh_1")

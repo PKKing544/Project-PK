@@ -28,6 +28,5 @@ reactive_kickback_threshold = 1
 [resource]
 script = ExtResource("2_hand")
 hand_name = "Flutter LMG"
-max_ink = 150.0
-passive_ink_regen_per_sec = 30.0
+passive_ink_regen_per_sec = 4.0
 primary_mode = SubResource("Resource_primary")

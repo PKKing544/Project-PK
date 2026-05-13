@@ -2,29 +2,29 @@
 
 [ext_resource type="Material" uid="uid://t7bds6aj7mmm" path="res://art/prototype_grid.tres" id="1_grid"]
 
-[node name="CourtyardChunk" type="Node3D"]
+[node name="CourtyardChunk" type="Node3D" unique_id=351408420]
 
-[node name="LevelGeometry" type="CSGCombiner3D" parent="."]
+[node name="LevelGeometry" type="CSGCombiner3D" parent="." unique_id=488761337]
 use_collision = true
 
-[node name="OuterWalls" type="CSGBox3D" parent="LevelGeometry"]
+[node name="OuterWalls" type="CSGBox3D" parent="LevelGeometry" unique_id=334854638]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 size = Vector3(20, 4, 20)
 material = ExtResource("1_grid")
 
-[node name="CenterCutout" type="CSGBox3D" parent="LevelGeometry"]
+[node name="CenterCutout" type="CSGBox3D" parent="LevelGeometry" unique_id=1067409670]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
 operation = 2
 size = Vector3(16, 6, 16)
 material = ExtResource("1_grid")
 
-[node name="EntranceNorth" type="CSGBox3D" parent="LevelGeometry"]
+[node name="EntranceNorth" type="CSGBox3D" parent="LevelGeometry" unique_id=1195726939]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 9)
 operation = 2
 size = Vector3(4, 3, 4)
 material = ExtResource("1_grid")
 
-[node name="EntranceSouth" type="CSGBox3D" parent="LevelGeometry"]
+[node name="EntranceSouth" type="CSGBox3D" parent="LevelGeometry" unique_id=240658472]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -9)
 operation = 2
 size = Vector3(4, 3, 4)

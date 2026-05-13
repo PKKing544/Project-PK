@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://bdp8ypstkathe"]
+
+[ext_resource type="ArrayMesh" uid="uid://c115dis3kt872" path="res://scenes/world/level_01_terrain.mesh" id="1_terrain"]
+[ext_resource type="Material" uid="uid://t7bds6aj7mmm" path="res://art/prototype_grid.tres" id="2_mat"]
+[ext_resource type="PackedScene" uid="uid://diygwv781k3tm" path="res://Player.tscn" id="3_player"]
+[ext_resource type="Script" uid="uid://2136fuq5n46d" path="res://scenes/world/level_01.gd" id="4_script"]
+[ext_resource type="Script" uid="uid://wii3xbr52oem" path="res://scripts/world/world_manager.gd" id="5_wm"]
+[ext_resource type="Resource" uid="uid://cpkq6ct212vjm" path="res://core/world/default_terrain_settings.tres" id="6_ts"]
+[ext_resource type="Script" path="res://scenes/world/baked_terrain.gd" id="7_bt"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
+sky_top_color = Color(0.075875096, 0.29122037, 0.416157, 1)
+sky_horizon_color = Color(0.34254786, 0.39806825, 0.29805228, 1)
+ground_horizon_color = Color(0.1836, 0.33804002, 0.54, 1)
+
+[sub_resource type="Sky" id="Sky"]
+sky_material = SubResource("SkyMat")
+
+[sub_resource type="Environment" id="Env"]
+background_mode = 2
+background_energy_multiplier = 4.97
+sky = SubResource("Sky")
+ambient_light_sky_contribution = 0.1
+ambient_light_energy = 2.56
+tonemap_mode = 3
+tonemap_exposure = 0.9
+glow_enabled = true
+glow_intensity = 1.0
+glow_strength = 0.67
+fog_enabled = true
+fog_light_color = Color(0.25010002, 0.3880616, 0.61, 1)
+fog_density = 0.0011
+fog_aerial_perspective = 0.414
+fog_sky_affect = 0.0
+
+[node name="Level01" type="Node3D" unique_id=1263719649]
+script = ExtResource("4_script")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1069801909]
+environment = SubResource("Env")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1122113226]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 40, 0)
+shadow_enabled = true
+
+[node name="Player" parent="." unique_id=1482078269 instance=ExtResource("3_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
+
+[node name="Terrain" type="Node3D" parent="." unique_id=1954002059]
+script = ExtResource("7_bt")
+
+[node name="TerrainMesh" type="MeshInstance3D" parent="Terrain" unique_id=627604937]
+material_override = ExtResource("2_mat")
+mesh = ExtResource("1_terrain")
+
+[node name="TerrainBody" type="StaticBody3D" parent="Terrain" unique_id=1838523334]
+
+[node name="TerrainCollision" type="CollisionShape3D" parent="Terrain/TerrainBody" unique_id=142872681]
+
+[node name="LevelEdits" type="Node3D" parent="." unique_id=528287913]
+
+[node name="CSGBox3D" type="CSGBox3D" parent="LevelEdits" unique_id=651289725]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 1, 27)
+size = Vector3(3, 9, 7)
+
+[node name="WorldManager" type="Node3D" parent="." unique_id=836771635]
+script = ExtResource("5_wm")
+player = NodePath("../Player")
+terrain_settings = ExtResource("6_ts")
+baked_terrain_mode = true
+view_bias = 200.0

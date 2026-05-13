@@ -40,7 +40,7 @@ func _ready():
 	label.text = "DPS: 0\nTotal: 0"
 	add_child(label)
 
-func take_damage(amount: float):
+func take_damage(amount: float, _force_dir: Vector3 = Vector3.ZERO, _raw_force: float = 0.0, _iframe_dur: float = 0.8, _min_stun: float = 0.05):
 	health -= amount
 	var current_time = Time.get_ticks_msec() / 1000.0
 	damage_history.append({"time": current_time, "amount": amount})

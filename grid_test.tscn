@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" path="res://scenes/enemies/basic_enemy.tscn" id="6_rirtd"]
 [ext_resource type="PackedScene" uid="uid://bfw64e8pvwh46" path="res://scenes/enemies/axolotl_enemy.tscn" id="7_01hy8"]
 [ext_resource type="PackedScene" uid="uid://dweam8vv0s26l" path="res://test_scenes/dummy.tscn" id="8_lhrmo"]
+[ext_resource type="ArrayMesh" uid="uid://c115dis3kt872" path="res://scenes/world/level_01_terrain.mesh" id="9_i853u"]
+[ext_resource type="Script" uid="uid://djymvnkg2gde4" path="res://scenes/world/baked_terrain.gd" id="10_bt"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.075875096, 0.29122037, 0.416157, 1)
@@ -60,6 +62,8 @@ jump_fov = 80.0
 script = ExtResource("2_world")
 player = NodePath("../Player")
 terrain_settings = SubResource("Resource_t5rmt")
+view_bias = 100.0
+baked_terrain_mode = true
 
 [node name="LevelGeometry" type="CSGCombiner3D" parent="." unique_id=172958449]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -370, 0)
@@ -74,9 +78,6 @@ material = ExtResource("3_px7vw")
 [node name="ElephantEnemy" parent="." unique_id=1839823746 instance=ExtResource("5_t5rmt")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 109, 39, 45)
 
-[node name="ElephantEnemy2" parent="." unique_id=280533684 instance=ExtResource("5_t5rmt")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -52, 7, 37)
-
 [node name="ElephantEnemy3" parent="." unique_id=1174916220 instance=ExtResource("5_t5rmt")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 8, -14)
 
@@ -88,3 +89,14 @@ transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 1
 
 [node name="TestDummy" parent="." unique_id=1845209355 instance=ExtResource("8_lhrmo")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 4, 0)
+
+[node name="Terrain" type="Node3D" parent="." unique_id=272461591]
+script = ExtResource("10_bt")
+
+[node name="TerrainMesh" type="MeshInstance3D" parent="Terrain" unique_id=40648185]
+material_override = ExtResource("3_px7vw")
+mesh = ExtResource("9_i853u")
+
+[node name="TerrainBody" type="StaticBody3D" parent="Terrain" unique_id=1873965053]
+
+[node name="TerrainCollision" type="CollisionShape3D" parent="Terrain/TerrainBody" unique_id=1301605491]

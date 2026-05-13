@@ -57,7 +57,7 @@ invincibility_duration = 0.4
 
 [node name="WorldManager" type="Node3D" parent="." unique_id=835541242 node_paths=PackedStringArray("player")]
 script = ExtResource("2_world")
-view_bias = 60.0
+view_bias = 200.0
 terrain_settings = SubResource("Resource_t5rmt")
 player = NodePath("../Player")
 

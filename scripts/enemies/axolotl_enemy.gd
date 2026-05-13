@@ -11,6 +11,7 @@ extends BaseEnemy
 @export var fire_delay: float = 1.0
 @export var fireball_damage: float = 20.0
 @export var flamethrower_dps: float = 8.0
+@export var projectile_spread: float = 0.08 # Max radians of random spread
 
 enum State { SLEEP, CHARGING, FLAMETHROWER }
 var current_state: State = State.SLEEP
@@ -24,6 +25,10 @@ var mouth_fireball: MeshInstance3D
 var flamethrower_area: Area3D
 var flamethrower_mesh: MeshInstance3D
 var head_material: StandardMaterial3D
+
+# Preloaded scenes — avoid synchronous load() on every shot
+const FIREBALL_SCENE = preload("res://scenes/enemies/fireball.tscn")
+const ORB_SCENE      = preload("res://systems/pickups/pickup_orb.tscn")
 
 func _ready():
 	super._ready()
@@ -110,6 +115,38 @@ func _process_ai(delta: float):
 	_track_player(delta)
 	_execute_state_logic(delta, dist_to_player)
 
+
+# Raycast from head to player centre — returns true if nothing blocks the path.
+func _has_line_of_sight() -> bool:
+	if not head_pivot or not player: return false
+	var from = head_pivot.global_position
+	var to   = player.global_position + Vector3(0, 1.0, 0)
+	var space = get_world_3d().direct_space_state
+	var query = PhysicsRayQueryParameters3D.create(from, to)
+	query.collision_mask = 1
+	
+	# Exclude everything that isn't environment: self, player, all enemies, all their children
+	var excludes: Array[RID] = [player.get_rid()]
+	for node in get_tree().get_nodes_in_group("enemy"):
+		excludes.append(node.get_rid())
+		for child in node.get_children():
+			if child is CollisionObject3D:
+				excludes.append(child.get_rid())
+				for grandchild in child.get_children():
+					if grandchild is CollisionObject3D:
+						excludes.append(grandchild.get_rid())
+		# Also exclude bubble shields
+		if node.get("current_bubble_node") and is_instance_valid(node.current_bubble_node):
+			excludes.append(node.current_bubble_node.get_rid())
+	# Exclude enemy_hurtbox group too (SweetSpotHitbox etc)
+	for node in get_tree().get_nodes_in_group("enemy_hurtbox"):
+		if node is CollisionObject3D:
+			excludes.append(node.get_rid())
+	query.exclude = excludes
+	
+	var result = space.intersect_ray(query)
+	return result.is_empty()
+
 func _track_player(delta: float):
 	if current_state != State.SLEEP and head_pivot:
 		var target_pos = player.global_position + Vector3(0, 1.0, 0)
@@ -120,6 +157,7 @@ func _track_player(delta: float):
 		head_pivot.look_at(target_pos, up)
 		var target_tr = head_pivot.global_transform
 		head_pivot.global_transform = prev.interpolate_with(target_tr, delta * 5.0)
+		head_pivot.scale = Vector3.ONE  # prevent scale drift from non-uniform parent
 
 func _execute_state_logic(delta: float, dist_to_player: float):
 	if current_state == State.SLEEP:
@@ -141,18 +179,21 @@ func _execute_state_logic(delta: float, dist_to_player: float):
 				fireball_charged = true
 				if mouth_fireball: mouth_fireball.scale = Vector3.ONE * 1.5
 		else:
-			if dist_to_player <= fire_radius:
+			# Hold fire until we have a clear shot
+			if dist_to_player <= fire_radius and _has_line_of_sight():
 				_fire_projectile()
 				fireball_charged = false
 				charge_timer = -fire_delay
 				if mouth_fireball: mouth_fireball.scale = Vector3.ZERO
 				
 	elif current_state == State.FLAMETHROWER:
-		if flamethrower_area: 
-			flamethrower_area.monitoring = true
-			if flamethrower_mesh: flamethrower_mesh.visible = true
-			_tick_flamethrower_damage(delta)
-					
+		var can_see = _has_line_of_sight()
+		if flamethrower_area:
+			flamethrower_area.monitoring = can_see
+			if flamethrower_mesh: flamethrower_mesh.visible = can_see
+			if can_see:
+				_tick_flamethrower_damage(delta)
+		
 		if mouth_fireball: mouth_fireball.scale = mouth_fireball.scale.lerp(Vector3.ZERO, delta * 40.0)
 
 func _tick_flamethrower_damage(delta: float):
@@ -169,14 +210,18 @@ func _tick_flamethrower_damage(delta: float):
 				body.take_damage(0.0, push_dir.normalized(), 250.0, 0.1, 0.02)
 
 func _fire_projectile():
-	var proj_scene = load("res://scenes/enemies/fireball.tscn")
-	if proj_scene and head_pivot:
-		var proj = proj_scene.instantiate()
-		get_parent().add_child(proj)
-		proj.global_position = head_pivot.global_position + (-head_pivot.global_transform.basis.z * 1.5)
-		proj.direction = -head_pivot.global_transform.basis.z.normalized()
-		proj.speed = projectile_speed
-		proj.damage = fireball_damage
+	if not head_pivot: return
+	var proj = FIREBALL_SCENE.instantiate()
+	get_parent().add_child(proj)
+	proj.creator = self # <--- Add this line
+	proj.global_position = head_pivot.global_position + (-head_pivot.global_transform.basis.z * 1.5)
+	
+	var dir = -head_pivot.global_transform.basis.z.normalized()
+	# Apply slight random spread
+	var random_offset = Vector3(randf_range(-1,1), randf_range(-1,1), randf_range(-1,1)) * projectile_spread
+	proj.direction = (dir + random_offset).normalized()
+	proj.speed = projectile_speed
+	proj.damage = fireball_damage
 
 func _on_flame_body_entered(body: Node3D):
 	if body.is_in_group("player"):
@@ -190,10 +235,9 @@ func _on_death():
 	_spawn_loot()
 
 func _spawn_loot():
-	var orb_scene = load("res://systems/pickups/pickup_orb.tscn")
 	var count = 4
 	for i in range(count):
-		var orb = orb_scene.instantiate()
+		var orb = ORB_SCENE.instantiate()
 		get_parent().add_child(orb)
 		orb.global_position = global_position + Vector3(0, 1.0, 0)
 		orb.pickup_type = 0 # BLACK_INK

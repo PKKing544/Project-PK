@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bfw64e8pvwh46"]
 
-[ext_resource type="Script" path="res://scripts/enemies/axolotl_enemy.gd" id="1_axo"]
-[ext_resource type="Script" path="res://scripts/enemies/sweet_spot.gd" id="2_sweet"]
+[ext_resource type="Script" uid="uid://bmbqx76eyj474" path="res://scripts/enemies/axolotl_enemy.gd" id="1_axo"]
+[ext_resource type="Script" uid="uid://rt3x5i52f4jm" path="res://scripts/enemies/sweet_spot.gd" id="2_sweet"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_1"]
 size = Vector3(3, 2, 2)
@@ -53,11 +53,14 @@ size = Vector3(3, 3, 8)
 [node name="AxolotlEnemy" type="CharacterBody3D" unique_id=1630446793 groups=["enemy"]]
 transform = Transform3D(1.5, 0, 0, 0, 1.2, 0, 0, 0, 1.6, 0, 0, 0)
 script = ExtResource("1_axo")
-threat_radius = 60.0
-fire_radius = 25.0
+threat_radius = 100.0
+fire_radius = 65.0
 melee_radius = 16.0
-projectile_speed = 35.0
+projectile_speed = 50.0
+charge_time = 2.5
 fire_delay = 0.5
+fireball_damage = 12.0
+projectile_spread = 0.2
 
 [node name="BodyCollision" type="CollisionShape3D" parent="." unique_id=1395307334]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, 0)

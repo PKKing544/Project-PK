@@ -1,5 +1,5 @@
 extends Area3D
-class_name PickupOrb
+# Duplicate of scripts/world/pickup_orb.gd — class_name removed to avoid conflict.
 
 enum Type { BLACK_INK, PINK_INK, KEY, ITEM }
 @export var pickup_type: Type = Type.BLACK_INK

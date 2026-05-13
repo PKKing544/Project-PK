@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://bubiarododkth"]
 
 [ext_resource type="Script" uid="uid://vpwsuv6flxpl" path="res://core/player/player.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://bpfg6ldf3f1n7" path="res://art/idle.png" id="2_h8ia1"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_shape"]
 
@@ -35,6 +36,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.755, 0)
 pixel_size = 0.005
 billboard = 2
 texture_filter = 0
+texture = ExtResource("2_h8ia1")
 
 [node name="AimSetup" type="Node3D" parent="Visuals" unique_id=1924337820]
 

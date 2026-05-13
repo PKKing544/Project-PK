@@ -3,6 +3,7 @@ extends CharacterBody3D # Character controller
 @export var speed := 12.0
 @export var acceleration := 80.0
 @export var friction := 60.0
+@export var turn_accel_multi := 3.0  # Acceleration boost when changing direction (1.0 = no boost)
 @export var jump_velocity := 15.0
 @export var max_air_jumps := 1
 @export var coyote_time := 0.15
@@ -142,6 +143,10 @@ var is_attachment_active: bool = true
 
 var spawn_point := Vector3(0, 3, 0)
 var kill_floor_y := -45.0
+
+var is_dead := false
+var death_timer := 0.0
+var death_rotation := 0.0
 
 var blob_shadow_ray: RayCast3D
 var blob_shadow_mesh: MeshInstance3D
@@ -321,6 +326,30 @@ func _input(event):
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _physics_process(delta):
+	if is_dead:
+		death_timer -= delta
+		
+		# Death Visuals: Spin and Turn Red
+		death_rotation += delta * 15.0 # Fast spin
+		base_sprite.rotation.z = death_rotation
+		base_sprite.modulate = Color(2.0, 0.2, 0.2) # Glowing red
+		pk_body.modulate = Color(2.0, 0.2, 0.2)
+		pk_arm.modulate = Color(2.0, 0.2, 0.2)
+		pk_hand.modulate = Color(2.0, 0.2, 0.2)
+		
+		# Handle death-specific movement (let knockback carry them)
+		if not knockback_comp.is_in_hitstun():
+			velocity.y -= gravity * delta
+			move_and_slide()
+			
+		# Camera still follows
+		var target_cam_pos = global_position + Vector3(0, 1.5, 0)
+		camera_pivot.global_position = camera_pivot.global_position.lerp(target_cam_pos, delta * camera_follow_speed)
+		
+		if death_timer <= 0:
+			_respawn()
+		return
+		
 	# Timers
 	if long_jump_timer > 0:
 		long_jump_timer -= delta
@@ -703,11 +732,13 @@ func _physics_process(delta):
 			var uphill_t = clamp(-slope_factor * 10.0, 0.0, 1.0)
 			accel = lerp(1000.0, 80.0, uphill_t)
 		
-		# Always apply slide speed changes IF ON FLOOR, otherwise only accelerate if below target or turning
+		# Boost accel when turning: the more perpendicular the input, the bigger the kick
 		var dot = move_dir.dot(Vector3(velocity.x, 0, velocity.z).normalized())
-		if (is_sliding and is_on_floor()) or current_hz_speed < target_speed or dot < 0.5:
-			velocity.x = move_toward(velocity.x, move_dir.x * target_speed, accel * delta)
-			velocity.z = move_toward(velocity.z, move_dir.z * target_speed, accel * delta)
+		var turn_t = clamp(1.0 - dot, 0.0, 1.0)  # 0 = going straight, 1 = full reverse
+		var effective_accel = accel * lerp(1.0, turn_accel_multi, turn_t)
+		if (is_sliding and is_on_floor()) or current_hz_speed < target_speed or dot < 0.7:
+			velocity.x = move_toward(velocity.x, move_dir.x * target_speed, effective_accel * delta)
+			velocity.z = move_toward(velocity.z, move_dir.z * target_speed, effective_accel * delta)
 	else:
 		var fric = friction
 		if not is_on_floor(): fric *= 0.5
@@ -864,19 +895,30 @@ func take_damage(amount: float, force_dir: Vector3 = Vector3.ZERO, raw_force: fl
 		
 	flash_timer = 0.15 # Still flash visually so we know we're hurting
 	
-	# Apply Knockback with health-based scaling (Smash Bros style)
-	if raw_force > 0 and knockback_comp:
-		# Multiplier: 1.0x at full health, up to 3.0x at 0 health
+	# Apply Knockback with health and ammo-based scaling
+	if knockback_comp and force_dir != Vector3.ZERO:
+		# 1. Health Multiplier: 1.0x at 100%, up to 3.0x at 0%
 		var health_ratio = current_health / max_health
-		var kb_mult = 1.0 + (1.0 - health_ratio) * 2.0
+		var health_mult = 1.0 + (1.0 - health_ratio) * 4.0
 		
-		var final_force = raw_force * kb_mult
+		# 2. Ammo (Ink) Multiplier: 1.0x at Full, up to 2.0x at Empty
+		var ammo_mult = 1.0
+		if hand_manager and hand_manager.current_hand:
+			var ammo_ratio = hand_manager.current_ink / hand_manager.current_hand.max_ink
+			ammo_mult = 1.0 + (1.0 - ammo_ratio) * 3.0 # Max 2.0x weight loss from low ink
+			
+		var total_mult = health_mult * ammo_mult
+		
+		# 3. Base Force + Attack Bonus
+		var base_force = 120.0 # Guaranteed base nudge
+		var final_force = (base_force + raw_force) * total_mult
+		
 		knockback_comp.apply_knockback(force_dir, final_force, min_stun)
 	
 	if health_bar:
 		health_bar.value = current_health
 		
-	if current_health <= 0:
+	if current_health <= 0 and not is_dead:
 		die()
 
 func _apply_visual_flash(active: bool):
@@ -893,8 +935,33 @@ func heal(amount: float):
 		health_bar.value = current_health
 
 func die():
+	is_dead = true
+	death_timer = 2.0
+	death_rotation = 0.0
+	# Optional: Give a final "pop" if they aren't moving much
+	if velocity.length() < 10.0:
+		velocity += Vector3(randf_range(-5,5), 15.0, randf_range(-5,5))
+
+func _respawn():
+	is_dead = false
+	current_health = max_health
+	if health_bar: health_bar.value = max_health
 	global_position = spawn_point
 	velocity = Vector3.ZERO
+	camera_pivot.global_position = spawn_point + Vector3(0, 1.5, 0)
+	
+	# Reset visuals
+	base_sprite.rotation.z = 0
+	base_sprite.modulate = Color.WHITE
+	pk_body.modulate = Color.WHITE
+	pk_arm.modulate = Color.WHITE
+	pk_hand.modulate = Color.WHITE
+	
+	# Reset states
+	is_dashing = false
+	is_charging_melee = false
+	is_swinging_melee = false
+	ability_cooldown_timer = 0.0
 	current_health = max_health
 	if health_bar:
 		health_bar.value = current_health

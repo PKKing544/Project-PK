@@ -25,9 +25,19 @@ func _physics_process(delta: float):
 		var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 		knockback_velocity.y -= gravity * hitstun_gravity_multiplier * delta
 		
-		# Apply friction/damping based on state
+		# Apply friction/damping with a curve (braking harder at the end)
 		var current_friction = ground_friction if body and body.is_on_floor() else air_friction
-		knockback_velocity = knockback_velocity.lerp(Vector3.ZERO, current_friction * delta)
+		
+		# Increase friction as the velocity slows down to create a "settling" curve
+		var speed_factor = clamp(knockback_velocity.length() / 20.0, 0.5, 2.0)
+		var adaptive_friction = current_friction / speed_factor
+		
+		knockback_velocity = knockback_velocity.lerp(Vector3.ZERO, adaptive_friction * delta)
+		
+		# If speed is very low, snap to zero to prevent infinite micro-sliding
+		if knockback_velocity.length() < 0.1:
+			knockback_velocity = Vector3.ZERO
+			hitstun_timer = 0.0
 		
 		# Clamp speed
 		if knockback_velocity.length() > max_speed:
