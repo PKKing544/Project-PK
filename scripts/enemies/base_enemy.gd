@@ -19,6 +19,8 @@ var player: Node3D
 
 # To be assigned in subclasses if they have meshes
 var mesh_materials: Array[StandardMaterial3D] = []
+var sprites: Array[Sprite3D] = []
+
 
 func get_hp_ratio() -> float:
 	if hp - incoming_damage <= 0: return 0.0
@@ -58,6 +60,9 @@ func _setup_materials():
 			if not mat: mat = child.mesh.material
 			if mat is StandardMaterial3D:
 				mesh_materials.append(mat)
+		elif child is Sprite3D:
+			sprites.append(child)
+
 
 func take_damage(amount: float, force_dir: Vector3 = Vector3.ZERO, raw_force: float = 0.0, _iframe_dur: float = 0.8, min_stun: float = 0.05):
 	incoming_damage = 0.0
@@ -87,12 +92,17 @@ func heal(amount: float):
 func _flash_color(color: Color):
 	for mat in mesh_materials:
 		mat.albedo_color = color
+	for s in sprites:
+		s.modulate = color
 	
 	get_tree().create_timer(0.1).timeout.connect(func(): 
 		if is_inside_tree() and not is_dead:
 			for mat in mesh_materials:
 				mat.albedo_color = base_color
+			for s in sprites:
+				s.modulate = Color.WHITE
 	)
+
 
 func _die():
 	is_dead = true
@@ -101,6 +111,9 @@ func _die():
 	
 	for mat in mesh_materials:
 		mat.albedo_color = Color(0.3, 0.3, 0.3)
+	for s in sprites:
+		s.modulate = Color(0.3, 0.3, 0.3)
+
 	
 	# Allow it to fall naturally if it was a turret
 	if knockback_comp:

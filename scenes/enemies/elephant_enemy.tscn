@@ -1,25 +1,58 @@
 [gd_scene format=3 uid="uid://c3m7yab1t4a2p"]
 
 [ext_resource type="Script" uid="uid://ci0hwvjjodfac" path="res://scripts/enemies/elephant_enemy.gd" id="1_elephant"]
+[ext_resource type="Script" uid="uid://dxel7bpl3ric7" path="res://scripts/components/directional_sprite_3d.gd" id="2_dir_sprite"]
+[ext_resource type="Texture2D" uid="uid://dlalhn7pqkb7s" path="res://art/Enemies/Elephant_main.png" id="3_2tmyh"]
+[ext_resource type="Texture2D" uid="uid://7ah68nfwacnm" path="res://art/Enemies/Elephant_above.png" id="4_ykkgt"]
+[ext_resource type="Texture2D" uid="uid://e3xp6ruwjnqn" path="res://art/Enemies/Elephant_below.png" id="5_fpk5u"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 radius = 1.0
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
-albedo_color = Color(0.2, 0.4, 0.8, 1)
+[sub_resource type="Shader" id="Shader_2tmyh"]
+code = "
+shader_type spatial;
+render_mode unshaded, depth_draw_opaque, cull_disabled;
 
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
-material = SubResource("StandardMaterial3D_1")
-radius = 0.6
-height = 1.5
+uniform sampler2D tex : source_color, filter_nearest;
+uniform vec4 outline_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);
+uniform float outline_width = 1.0;
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2"]
-albedo_color = Color(0.9, 0.9, 1, 1)
+void fragment() {
+	vec4 base_color = texture(tex, UV);
+	vec2 size = vec2(textureSize(tex, 0));
+	
+	float outline = 0.0;
+	
+	outline += texture(tex, UV + vec2(-outline_width, 0.0) / size).a;
+	outline += texture(tex, UV + vec2(outline_width, 0.0) / size).a;
+	outline += texture(tex, UV + vec2(0.0, -outline_width) / size).a;
+	outline += texture(tex, UV + vec2(0.0, outline_width) / size).a;
+	
+	outline += texture(tex, UV + vec2(-outline_width, outline_width) / size).a;
+	outline += texture(tex, UV + vec2(outline_width, outline_width) / size).a;
+	outline += texture(tex, UV + vec2(-outline_width, -outline_width) / size).a;
+	outline += texture(tex, UV + vec2(outline_width, -outline_width) / size).a;
+	
+	outline = min(outline, 1.0);
+	
+	vec4 final_color = base_color;
+	if (base_color.a < 0.1 && outline > 0.1) {
+		final_color = outline_color;
+	}
+	
+	ALBEDO = final_color.rgb;
+	ALPHA = final_color.a;
+	ALPHA_SCISSOR_THRESHOLD = 0.1;
+}
+"
 
-[sub_resource type="SphereMesh" id="SphereMesh_1"]
-material = SubResource("StandardMaterial3D_2")
-radius = 0.8
-height = 0.5
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ykkgt"]
+render_priority = 0
+shader = SubResource("Shader_2tmyh")
+shader_parameter/tex = ExtResource("3_2tmyh")
+shader_parameter/outline_color = Color(1, 1, 1, 1)
+shader_parameter/outline_width = 7.042
 
 [node name="ElephantEnemy" type="CharacterBody3D" unique_id=1671382912 groups=["enemy"]]
 script = ExtResource("1_elephant")
@@ -31,9 +64,17 @@ base_color = Color(0.19169998, 0.5545099, 0.71, 1)
 transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 0, 0)
 shape = SubResource("CapsuleShape3D_1")
 
-[node name="BodyMesh" type="MeshInstance3D" parent="." unique_id=1625659451]
-mesh = SubResource("CapsuleMesh_1")
-
-[node name="CloudMesh" type="MeshInstance3D" parent="." unique_id=1832650974]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.6, 0)
-mesh = SubResource("SphereMesh_1")
+[node name="DirectionalSprite" type="Sprite3D" parent="." unique_id=1481565641]
+transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 0.9999999, 0, 0, 0)
+material_override = SubResource("ShaderMaterial_ykkgt")
+billboard = 1
+alpha_cut = 1
+texture_filter = 0
+texture = ExtResource("3_2tmyh")
+script = ExtResource("2_dir_sprite")
+main_texture = ExtResource("3_2tmyh")
+above_texture = ExtResource("4_ykkgt")
+below_texture = ExtResource("5_fpk5u")
+vertical_angle_threshold = 45.0
+use_outline = true
+outline_width = 7.042
