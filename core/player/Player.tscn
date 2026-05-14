@@ -20,6 +20,7 @@ base_pogo_bounce = 15.0
 hitbox_size_light = Vector3(1, 2, 2)
 hitbox_size_heavy = Vector3(1.5, 2.3, 2.3)
 hitbox_offset = Vector3(0, -0.65, -0.35)
+outline_width = 22.975
 camera_follow_speed = 20.0
 base_fov = 53.0
 jump_fov = 60.0

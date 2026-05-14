@@ -56,7 +56,27 @@ var knockback_comp: KnockbackComponent
 @export var equipped_dash: DashData
 @export var equipped_heavy_attack: HeavyAttackData
 
+@export_group("Outline")
+@export var use_outline: bool = true:
+	set(val):
+		use_outline = val
+		_refresh_outlines()
+@export var outline_color: Color = Color.WHITE:
+	set(val):
+		outline_color = val
+		_refresh_outlines()
+@export var outline_width: float = 4.0:
+	set(val):
+		outline_width = val
+		_refresh_outlines()
+@export var outline_depth_offset: float = 0.001:
+	set(val):
+		outline_depth_offset = val
+		_refresh_outlines()
+
+
 @export var mouse_sensitivity := 0.002
+
 @export var camera_follow_speed := 15.0
 @export var max_camera_roll := 1.0
 
@@ -300,10 +320,47 @@ func _ready():
 	
 	if equipped_hand:
 		hand_manager.equip_hand(equipped_hand, equipped_attachment)
+		
+	if use_outline:
+		_setup_outlines()
+
+func _refresh_outlines():
+	if not is_node_ready(): return
+	if not use_outline:
+		var parts = [base_sprite, pk_body, pk_arm, pk_hand]
+		for s in parts:
+			if s and is_instance_valid(s):
+				s.material_overlay = null
+	else:
+		_setup_outlines()
+
+func _setup_outlines():
+	if not use_outline: return
+	var outline_shader = preload("res://materials/depth_outline.gdshader")
+	var parts = [base_sprite, pk_body, pk_arm, pk_hand]
+	for s in parts:
+		if s and is_instance_valid(s):
+			var mat = ShaderMaterial.new()
+			mat.shader = outline_shader
+			mat.set_shader_parameter("tex", s.texture)
+			mat.set_shader_parameter("outline_color", outline_color)
+			mat.set_shader_parameter("outline_width", outline_width)
+			mat.set_shader_parameter("depth_offset", outline_depth_offset)
+			s.material_overlay = mat
+
+func _set_base_texture(tex: Texture2D):
+	if base_sprite.texture != tex:
+		base_sprite.texture = tex
+		if base_sprite.material_overlay is ShaderMaterial:
+			base_sprite.material_overlay.set_shader_parameter("tex", tex)
+
 
 func _on_hand_changed(hand: HandData):
 	if hand and hand.hand_texture:
 		pk_hand.texture = hand.hand_texture
+		if pk_hand.material_overlay is ShaderMaterial:
+			pk_hand.material_overlay.set_shader_parameter("tex", pk_hand.texture)
+
 
 func update_equipment():
 	if equipped_hand:
@@ -846,36 +903,36 @@ func update_visuals(input_dir: Vector2, touching_wall: bool, wall_normal: Vector
 		aim_setup.visible = false
 		
 		if is_wall_running:
-			base_sprite.texture = tex_run
+			_set_base_texture(tex_run)
 			var dot = camera_pivot.transform.basis.x.dot(wall_normal)
 			if dot > 0:
 				base_sprite.rotation_degrees.z = -wall_run_tilt 
 			else:
 				base_sprite.rotation_degrees.z = wall_run_tilt
 		elif is_dashing:
-			base_sprite.texture = tex_dash
+			_set_base_texture(tex_dash)
 		elif touching_wall:
-			base_sprite.texture = tex_jump
+			_set_base_texture(tex_jump)
 		elif not is_on_floor():
-			base_sprite.texture = tex_jump
+			_set_base_texture(tex_jump)
 		elif is_sliding:
-			base_sprite.texture = tex_slide
+			_set_base_texture(tex_slide)
 		elif is_sneaking:
-			base_sprite.texture = tex_sneak
+			_set_base_texture(tex_sneak)
 		elif Input.is_action_pressed("interact"):
-			base_sprite.texture = tex_backup
+			_set_base_texture(tex_backup)
 		elif input_dir == Vector2.ZERO:
-			base_sprite.texture = tex_idle
+			_set_base_texture(tex_idle)
 		else:
 			if input_dir.y > 0.5:
-				base_sprite.texture = tex_backup
+				_set_base_texture(tex_backup)
 			elif input_dir.x > 0.5:
-				base_sprite.texture = tex_sideinvert
+				_set_base_texture(tex_sideinvert)
 				base_sprite.flip_h = true
 			elif input_dir.x < -0.5:
-				base_sprite.texture = tex_side
+				_set_base_texture(tex_side)
 			else:
-				base_sprite.texture = tex_run
+				_set_base_texture(tex_run)
 
 func apply_kickback(force: Vector3):
 	velocity += force
