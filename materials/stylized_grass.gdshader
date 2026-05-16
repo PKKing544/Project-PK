@@ -2,6 +2,7 @@
 // Adapted for Project PK (removed global cloud uniforms for simplicity, merged includes)
 shader_type spatial;
 render_mode depth_prepass_alpha, depth_draw_opaque, cull_disabled;
+#include "res://materials/shaderinc/dither.gdshaderinc"
 
 group_uniforms colours_and_textures;
 uniform sampler2D albedo_texture : source_color, filter_nearest;
@@ -20,7 +21,7 @@ uniform float albedo3_threshold : hint_range(0.0, 1.0, 0.001) = 0.661;
 uniform sampler2D albedo3_noise;
 
 group_uniforms colours_and_textures.blending;
-uniform float color_blend : hint_range(0.0, 1.0, 0.01) = 0.5;
+uniform float color_blend : hint_range(0.0, 1.0, 0.01) = 0.0;
 
 group_uniforms colours_and_textures.accent1;
 uniform float accent_frequency1 : hint_range(0.0, 0.05, 0.0001) = 0.001;
@@ -62,6 +63,8 @@ uniform float threshold_gradient_size = 0.2;
 
 group_uniforms transform;
 uniform float pivot_offset : hint_range(0.0, 5.0, 0.1) = 0.5;
+uniform float dither_near : hint_range(0.0, 20.0, 0.1) = 1.5;
+uniform float dither_far  : hint_range(0.0, 20.0, 0.1) = 4.0;
 
 varying float wind_noise_sample;
 varying float instance_id;
@@ -217,7 +220,12 @@ void fragment() {
 	// Force normal to point straight up so grass gets the same flat lighting as the terrain floor
 	NORMAL = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 	LIGHT_VERTEX = model_origin;
-	ALPHA_SCISSOR_THRESHOLD = 0.5;
+
+	// Proximity dither: dissolve grass blades when camera is too close (hides floor clipping)
+	vec3 cam_pos = INV_VIEW_MATRIX[3].xyz;
+	float cam_dist = length(cam_pos - object_origin);
+	float proximity_fade = smoothstep(dither_near, dither_far, cam_dist);
+	if (dither_check(FRAGCOORD.xy, proximity_fade * ALPHA)) discard;
 }
 
 void light() {
