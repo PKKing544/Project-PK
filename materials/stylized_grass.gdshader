@@ -1,5 +1,5 @@
 // Original Code by Dylearn
-// Adapted for Project PK (removed global cloud uniforms for simplicity, merged includes)
+// Adapted for Project PK
 shader_type spatial;
 render_mode depth_prepass_alpha, depth_draw_opaque, cull_disabled;
 #include "res://materials/shaderinc/dither.gdshaderinc"
@@ -63,8 +63,23 @@ uniform float threshold_gradient_size = 0.2;
 
 group_uniforms transform;
 uniform float pivot_offset : hint_range(0.0, 5.0, 0.1) = 0.5;
+uniform float y_offset : hint_range(-2.0, 2.0, 0.01) = 0.0;
+uniform float depth_bias : hint_range(0.0, 1.0, 0.01) = 0.0;
+uniform float forward_offset : hint_range(-2.0, 2.0, 0.01) = 0.0;
+uniform float spherical_blend : hint_range(0.0, 1.0, 0.01) = 0.5;
+uniform float fade_start_height : hint_range(0.0, 2.0, 0.01) = 0.2;
+uniform float fade_end_height : hint_range(-1.0, 1.0, 0.01) = 0.02;
 uniform float dither_near : hint_range(0.0, 20.0, 0.1) = 1.5;
 uniform float dither_far  : hint_range(0.0, 20.0, 0.1) = 4.0;
+
+group_uniforms clouds;
+uniform sampler2D cloud_texture : filter_linear_mipmap, repeat_enable;
+uniform float cloud_scale : hint_range(0.0, 0.05, 0.0001) = 0.003;
+uniform float cloud_speed : hint_range(0.0, 0.1, 0.0001) = 0.006;
+uniform vec2 cloud_direction = vec2(1.0, 0.5);
+uniform float cloud_threshold : hint_range(0.0, 1.0) = 0.5;
+uniform float cloud_feather : hint_range(0.0, 0.5) = 0.15;
+uniform float cloud_strength : hint_range(0.0, 1.0) = 0.35;
 
 varying float wind_noise_sample;
 varying float instance_id;
@@ -174,14 +189,49 @@ void vertex() {
 	// Shift the pivot point up in world space to prevent the grass from clipping under the floor when looking top-down
 	VERTEX.y -= pivot_offset;
 
-	mat4 modified_model_view = VIEW_MATRIX * mat4(
-		vec4(INV_VIEW_MATRIX[0].xyz * length(MODEL_MATRIX[0].xyz), 0.0),
-		vec4(INV_VIEW_MATRIX[1].xyz * length(MODEL_MATRIX[1].xyz), 0.0),
-		vec4(INV_VIEW_MATRIX[2].xyz * length(MODEL_MATRIX[2].xyz), 0.0),
-		MODEL_MATRIX[3] + vec4(0.0, pivot_offset, 0.0, 0.0)
+	// Billboarding calculations with configurable spherical blend
+	vec3 cam_pos = INV_VIEW_MATRIX[3].xyz;
+	vec3 instance_pos = MODEL_MATRIX[3].xyz;
+	
+	// Cylindrical (Y-axis only) vectors
+	vec3 cyl_dir = cam_pos - instance_pos;
+	cyl_dir.y = 0.0;
+	if (length(cyl_dir) > 0.0001) {
+		cyl_dir = normalize(cyl_dir);
+	} else {
+		cyl_dir = vec3(0.0, 0.0, 1.0);
+	}
+	
+	// Apply forward offset (physically moves the instance horizontally towards the camera/player)
+	instance_pos += cyl_dir * forward_offset;
+	
+	vec3 cyl_up = vec3(0.0, 1.0, 0.0);
+	vec3 cyl_right = normalize(cross(cyl_up, cyl_dir));
+	
+	// Spherical vectors (directly facing camera plane/camera vectors)
+	vec3 sph_right = INV_VIEW_MATRIX[0].xyz;
+	vec3 sph_up = INV_VIEW_MATRIX[1].xyz;
+	vec3 sph_dir = INV_VIEW_MATRIX[2].xyz;
+	
+	// Blend between cylindrical (0.0) and spherical (1.0)
+	vec3 billboard_right = normalize(mix(cyl_right, sph_right, spherical_blend));
+	vec3 billboard_up = normalize(mix(cyl_up, sph_up, spherical_blend));
+	vec3 billboard_dir = normalize(mix(cyl_dir, sph_dir, spherical_blend));
+	
+	mat4 world_billboard_matrix = mat4(
+		vec4(billboard_right * length(MODEL_MATRIX[0].xyz), 0.0),
+		vec4(billboard_up * length(MODEL_MATRIX[1].xyz), 0.0),
+		vec4(billboard_dir * length(MODEL_MATRIX[2].xyz), 0.0),
+		vec4(instance_pos + vec3(0.0, pivot_offset + y_offset, 0.0), 1.0)
 	);
+	
+	mat4 modified_model_view = VIEW_MATRIX * world_billboard_matrix;
 	model_origin = (MODELVIEW_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-	MODELVIEW_MATRIX = modified_model_view;
+	
+	// Transform vertex to view space, apply depth bias (pull closer to camera), and set modelview to identity
+	VERTEX = (modified_model_view * vec4(VERTEX, 1.0)).xyz;
+	VERTEX.z += depth_bias;
+	MODELVIEW_MATRIX = mat4(1.0);
 }
 
 void fragment() {
@@ -217,9 +267,23 @@ void fragment() {
 		ALPHA = albedo_tex.a;
 	}
 
+	// Smoothly dither the bottom edge of the grass in world height coordinates to hide the clipping line regardless of wind rotation
+	vec3 world_vertex_pos = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float height_above_ground = world_vertex_pos.y - object_origin.y;
+	float fade_range = max(fade_start_height - fade_end_height, 0.0001);
+	float bottom_mask = smoothstep(0.0, 1.0, clamp((height_above_ground - fade_end_height) / fade_range, 0.0, 1.0));
+	ALPHA *= bottom_mask;
+
 	// Force normal to point straight up so grass gets the same flat lighting as the terrain floor
 	NORMAL = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 	LIGHT_VERTEX = model_origin;
+
+	// Apply cloud shadow — same noise/settings as terrain, set by CloudManager
+	vec2 cloud_uv = world_pos.xz * cloud_scale
+				 + normalize(cloud_direction) * cloud_speed * TIME;
+	float cloud_val = texture(cloud_texture, cloud_uv).r;
+	float in_shadow = 1.0 - smoothstep(cloud_threshold, cloud_threshold + cloud_feather, cloud_val);
+	ALBEDO *= 1.0 - in_shadow * cloud_strength;
 
 	// Proximity dither: dissolve grass blades when camera is too close (hides floor clipping)
 	vec3 cam_pos = INV_VIEW_MATRIX[3].xyz;

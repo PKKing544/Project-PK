@@ -1,11 +1,49 @@
 [gd_resource type="ShaderMaterial" format=3 uid="uid://t7bds6aj7mmm"]
 
 [ext_resource type="Shader" uid="uid://cullkgq020144" path="res://art/prototype_grid.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" uid="uid://brjrp4te6lnss" path="res://art/terrain_noise.tres" id="2_kwqyr"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_t3g1v"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_150tb"]
+noise = SubResource("FastNoiseLite_t3g1v")
+seamless = true
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_kgq0o"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_psasc"]
+noise = SubResource("FastNoiseLite_kgq0o")
+seamless = true
 
 [resource]
 render_priority = 0
 shader = ExtResource("1_shader")
-shader_parameter/albedo_color = Color(0.2, 0.619608, 0.231373, 1)
-shader_parameter/grid_color = Color(0.1, 0.3, 0.1, 1)
+shader_parameter/albedo_color = Color(2.4065375e-07, 0.6569037, 0.3956622, 1)
+shader_parameter/albedo2 = Color(0.35040003, 0.73, 0.38203332, 1)
+shader_parameter/albedo2_noise = ExtResource("2_kwqyr")
+shader_parameter/albedo2_scale = 0.0050000002375
+shader_parameter/albedo2_threshold = 0.638000030305
+shader_parameter/albedo3 = Color(0.3248, 0.56, 0.38752002, 1)
+shader_parameter/albedo3_noise = SubResource("NoiseTexture2D_150tb")
+shader_parameter/albedo3_scale = 0.002000000095
+shader_parameter/albedo3_threshold = 0.4590000218025
+shader_parameter/show_grid = false
+shader_parameter/grid_color = Color(0.14117648, 0.14117648, 0.14117648, 1)
 shader_parameter/grid_size = 1.0
-shader_parameter/line_width = 0.005
+shader_parameter/line_width = -0.045
+shader_parameter/player_world_pos = Vector3(0, 0, 0)
+shader_parameter/camera_world_pos = Vector3(0, 0, 0)
+shader_parameter/vignette_inner = 0.0
+shader_parameter/vignette_outer = 1.40000002086168
+shader_parameter/vignette_offset = 2.30000003427276
+shader_parameter/cloud_texture = SubResource("NoiseTexture2D_psasc")
+shader_parameter/cloud_scale = 0.002
+shader_parameter/cloud_speed = 0.006
+shader_parameter/cloud_direction = Vector2(1, 0.5)
+shader_parameter/cloud_threshold = 0.425
+shader_parameter/cloud_feather = 0.055
+shader_parameter/cloud_strength = 0.345
+shader_parameter/cuts = 3
+shader_parameter/wrap = 0.0
+shader_parameter/steepness = 1.0
+shader_parameter/threshold_gradient_size = 0.2

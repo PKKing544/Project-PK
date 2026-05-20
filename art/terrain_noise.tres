@@ -1,0 +1,7 @@
+[gd_resource type="NoiseTexture2D" format=3 uid="uid://brjrp4te6lnss"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_03jpt"]
+
+[resource]
+noise = SubResource("FastNoiseLite_03jpt")
+seamless = true

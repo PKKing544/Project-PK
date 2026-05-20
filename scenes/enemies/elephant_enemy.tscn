@@ -7,7 +7,8 @@
 [ext_resource type="Texture2D" uid="uid://e3xp6ruwjnqn" path="res://art/Enemies/Elephant_below.png" id="5_fpk5u"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
-radius = 1.0
+radius = 1.5
+height = 3.0
 
 [sub_resource type="Shader" id="Shader_2tmyh"]
 code = "
@@ -19,7 +20,7 @@ uniform vec4 outline_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform float outline_width = 1.0;
 
 void fragment() {
-	vec4 base_color = texture(tex, UV);
+	vec4 base_color = texture(tex, UV) * COLOR;
 	vec2 size = vec2(textureSize(tex, 0));
 	
 	float outline = 0.0;
@@ -38,8 +39,9 @@ void fragment() {
 	
 	vec4 final_color = base_color;
 	if (base_color.a < 0.1 && outline > 0.1) {
-		final_color = outline_color;
+		final_color = outline_color * COLOR;
 	}
+
 	
 	ALBEDO = final_color.rgb;
 	ALPHA = final_color.a;
@@ -61,11 +63,11 @@ knockback_weight = 500.0
 base_color = Color(0.19169998, 0.5545099, 0.71, 1)
 
 [node name="CollisionShape" type="CollisionShape3D" parent="." unique_id=751698217]
-transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 0, 0)
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 0.22, 0, 0.1, 0)
 shape = SubResource("CapsuleShape3D_1")
 
 [node name="DirectionalSprite" type="Sprite3D" parent="." unique_id=1481565641]
-transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 0.9999999, 0, 0, 0)
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
 material_override = SubResource("ShaderMaterial_ykkgt")
 billboard = 1
 alpha_cut = 1

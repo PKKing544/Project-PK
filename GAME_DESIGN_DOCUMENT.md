@@ -21,8 +21,10 @@
 12. [Enemies: Axolotl (Turret)](#12-enemies-axolotl-turret)
 13. [Weapons: Healing Water Gun & Flowerbeds](#13-weapons-healing-water-gun--flowerbeds)
 14. [Rendering: Chunk Billboard System](#14-rendering-chunk-billboard-system)
-15. [Environment: The Prototype Grid Shader](#15-environment-the-prototype-grid-shader)
-16. [File Structure Reference](#16-file-structure-reference)
+15. [Environment: The Prototype Grid Shader & Cloud Shadows](#15-environment-the-prototype-grid-shader-and-cloud-shadows)
+16. [Rendering: Stylized Grass Billboard System](#16-rendering-stylized-grass-billboard-system)
+17. [File Structure Reference](#17-file-structure-reference)
+18. [Future Considerations](#18-future-considerations)
 
 ---
 
@@ -571,3 +573,150 @@ All enemies follow the K.O. State pattern (Section 7) — physics finish resolvi
 A `Label3D` above every enemy displays real-time knockback stats during development.
 
 ---
+
+## 11. Enemies: Elephant
+
+### Overview
+The Elephant (`scripts/enemies/elephant_enemy.gd`) is a floating support enemy. It hovers at a target height using a sine-wave hover calculation and acts as a healer and protector for other enemies.
+
+### AI & Support Mechanics
+- **Detection & Support Range:** Scans up to `80.0`m detection range and `100.0`m bubble range.
+- **Bubble Shield Casting:** When taking damage, if it does not have a shield active, it casts a **Bubble Shield** (`scripts/enemies/bubble_shield.gd`) that protects it and nearby enemies.
+- **Support Healing:** If it hasn't attacked or been in combat for 5 seconds, it targets nearby wounded enemies in the `"enemy"` group and channels heals.
+- **Smash Interaction:** The Elephant has a slow balloon fall gravity multiplier (`hitstun_gravity_multiplier = 0.1`) when hit in hitstun, making it float gently in the air.
+- **Bubble Bounce:** The player can perform a heavy melee downward pogo attack on the Bubble Shield, which multiplies the pogo bounce height by **3×** for massive vertical mobility.
+
+---
+
+## 12. Enemies: Axolotl (Turret)
+
+### Overview
+The Axolotl (`scripts/enemies/axolotl_enemy.gd`) is a stationary or wall-clinging turret-style enemy. It has a high weight rating (`weight = 2500` on its `KnockbackComponent`) to prevent it from being easily pushed around by light attacks.
+
+### State Machine
+- **SLEEP:** Default inactive state when the player is outside `threat_radius` (40m).
+- **CHARGING:** Player is inside threat range. The Axolotl pivot tracks the player and charges a fireball at its mouth.
+- **FLAMETHROWER:** Player gets within `melee_radius` (8m). It opens its mouth and releases a high-damage-per-second fire spray.
+
+### Weak Point & Explode Mechanic
+- **Sweet Spot:** The head features a `SweetSpotHitbox` (weak point).
+- **Charged Fireball Weakness:** If the player shoots the Axolotl's head while its fireball is fully charged (`fireball_charged` is true):
+  - Deals **1.8×** critical damage.
+  - Explodes the fireball internally, resetting its state.
+  - Applies a massive custom knockback force (`150,000.0` units) to the Axolotl, launching the heavy turret backward/skyward.
+
+---
+
+## 13. Weapons: Healing Water Gun & Flowerbeds
+
+### Future Weapon Specification [Design Intent]
+The Healing Water Gun is a planned projectile weapon designed for hybrid support and area control.
+- **Primary Fire:** Shoots water-based projectiles. If `heals_target = true`, hits on allies restore health.
+- **Flowerbed Spawning:** On contact with ground surfaces, the projectile applies `SpawnFlowerbedEffectData` which spawns a temporary **Flowerbed** instance on the terrain.
+- **Flowerbed Utility:** Flowerbeds act as local area-of-effect zones that heal allies or apply speed modifiers when stood upon.
+
+---
+
+## 14. Rendering: Chunk Billboard System
+
+### Overview
+To optimize rendering performance on the 9×9 grid, chunks use a radial priority system (Section 3). Far-away chunks (Tier 3, 4+ chunks away) are completely replaced by flat **2D Billboards** (`art/billboards/*`).
+- **Billboard Generation:** Pre-rendered 2D sprites of each chunk type (Room, Tower, Hall, Courtyard).
+- **GPU Conservation:** De-spawns full 3D meshes and disables collision physics for Tier 3 chunks, replacing them with a single quad that rotates to face the player, preserving the visual horizon with minimal draw calls.
+
+---
+
+## 15. Environment: The Prototype Grid Shader & Cloud Shadows
+
+### Overview
+The environment uses a toon/grid visual aesthetic. To add ambient life and movement, a dynamic **Cloud Shadow System** overlays moving shadows across the terrain, grass, and building meshes.
+
+### Cloud Manager (`scripts/world/cloud_manager.gd`)
+A tool script running in the editor that centralizes parameters and updates materials dynamically.
+- **Live Preview:** Being a `@tool`, changing values in the inspector updates the materials instantly in the editor viewport.
+- **Target Materials:** Finds the `MarchingSquaresTerrain` and updates the terrain material and grass material overrides, as well as the building material (`res://art/prototype_grid.tres`).
+
+### Shader Implementation (`mst_terrain.gdshaderinc`, `prototype_grid.gdshader`)
+The cloud shadow logic is injected directly into the terrain and wall fragment shaders:
+- **Noise Mapping:** Maps a scrolling cellular/Worley noise texture over world-space XZ coordinates.
+- **Shader Variables:**
+  - `cloud_scale` (frequency of clouds in world coordinates).
+  - `cloud_direction` & `cloud_speed` (drift direction and velocity over time).
+  - `cloud_threshold` & `cloud_feather` (controls cloud coverage and edge softness).
+  - `cloud_strength` (controls shadow darkness/blending).
+
+---
+
+## 16. Rendering: Stylized Grass Billboard System
+
+### Overview
+The grass system uses `MultiMeshInstance3D` nodes populated by the terrain planter. The grass blades use a specialized shader (`materials/stylized_grass.gdshader`) for interactive swaying and billboarding.
+
+### Core Features & Math Updates
+
+#### Interactive Sway & Wind
+- **Character Displacement:** `GrassManager.gd` updates the `character_positions` uniform array with the player's position. Vertices sway and bend away from the player based on distance.
+- **Wind Sway:** Combines scrolling noise with vertex offsets to simulate wind gusts.
+
+#### Upgraded Transform Controls
+- **Spherical Blend (`spherical_blend`):** Controls the blend between Cylindrical billboarding (0.0, locks grass vertical) and Spherical billboarding (1.0, tilts fully to face the camera). The default is `0.5` to maintain an upright look while ensuring the grass has depth when viewed from high camera angles.
+- **Y Offset (`y_offset`) & Pivot Offset (`pivot_offset`):** Shifts the vertex pivot height dynamically to prevent grass cards from clipping under the ground or floating.
+- **Depth Bias (`depth_bias`):** Adjusts the depth value in view-space to pull grass pixels slightly closer to the camera, resolving sorting errors against the floor.
+- **Forward Offset (`forward_offset`):** Physically offsets the mesh instance forward along the camera direction. Used to create layered, overlapping grass cards that stand in front of other patches.
+
+#### World-Height Locked Bottom Dither Fade
+- **The Problem:** When wind rotates or bends the grass mesh, a texture-coordinate-based fade will tilt and lift off the ground, causing floating dither patterns or harsh seams.
+- **The Solution:** The shader transforms view-space vertex coordinates back into world coordinates using `INV_VIEW_MATRIX` in the fragment shader:
+  ```glsl
+  vec3 world_vertex_pos = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+  float height_above_ground = world_vertex_pos.y - object_origin.y;
+  ```
+- **Height-Locked Masking:** The alpha fade is calculated using the final physical world height above the grass instance's origin:
+  - `fade_start_height` (height above ground where fade begins, default `0.2`m).
+  - `fade_end_height` (height above ground where grass is fully transparent, default `0.02`m).
+  The fade plane remains perfectly flat and locked to the ground level, regardless of how much the grass mesh sways, rotates, or bends in the wind.
+
+---
+
+## 17. File Structure Reference
+
+```
+res://
+├── addons/
+│   └── MarchingSquaresTerrain/     # Terrain generation plugin & shaders
+├── art/
+│   ├── billboards/                 # Distance billboard cards for chunks
+│   ├── prototype_grid.tres         # Central building/wall shader material
+│   └── prototype_grid.gdshader     # Toon wall shader with cloud shadows
+├── core/
+│   ├── player/
+│   │   ├── player.gd               # Main player controller
+│   │   └── Player.tscn             # Player 3D scene
+│   └── world/                      # Level template & scene setup
+├── materials/
+│   ├── stylized_grass.gdshader     # Interactive grass shader
+│   └── shaderinc/                  # Shared shader includes (clouds, dither)
+└── scripts/
+    ├── components/                 # Node components (KnockbackComponent)
+    ├── enemies/
+    │   ├── base_enemy.gd           # Core AI & death base class
+    │   ├── axolotl_enemy.gd        # Turret AI & weak-point logic
+    │   └── elephant_enemy.gd       # Hover support AI & bubble shield
+    ├── weapons/
+    │   ├── data/                   # Resource templates for loadout
+    │   └── logic/                  # Firing mechanics & collision resolvers
+    └── world/
+        ├── cloud_manager.gd        # Dynamic tool class for editor preview
+        └── grass_manager.gd        # Feed player positions to grass shaders
+```
+
+---
+
+## 18. Future Considerations
+
+### Terrain Clutter & Coverage
+In a future polish phase, the grass billboard system should be expanded to include other environmental assets:
+- **Scattered Rocks:** Low-poly debris meshes spawned via the same planter logic to break up terrain textures.
+- **Grass Patches & Clutter:** Multi-blade foliage clusters with varying scales to add visual density.
+- **Debris & Details:** Small ground clutter sprites and twigs to populate the biome details.
+

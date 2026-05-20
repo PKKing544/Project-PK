@@ -1,8 +1,13 @@
 [gd_scene format=3 uid="uid://bxshdu7qvase7"]
 
+[ext_resource type="Shader" uid="uid://7yv34gjrfdnk" path="res://art/buildings.gdshader" id="1_56w75"]
 [ext_resource type="Material" uid="uid://t7bds6aj7mmm" path="res://art/prototype_grid.tres" id="1_grid"]
 [ext_resource type="PackedScene" uid="uid://c3m7yab1t4a2p" path="res://scenes/enemies/elephant_enemy.tscn" id="2_qgawi"]
 [ext_resource type="PackedScene" uid="uid://bfw64e8pvwh46" path="res://scenes/enemies/axolotl_enemy.tscn" id="3_56w75"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3eai6"]
+render_priority = 0
+shader = ExtResource("1_56w75")
 
 [node name="HallChunk" type="Node3D" unique_id=746953506]
 transform = Transform3D(1, 0, 0, 0, 0.99904823, -0.043619387, 0, 0.043619387, 0.99904823, 0, -0.5, 0)
@@ -13,7 +18,7 @@ use_collision = true
 [node name="Hallway" type="CSGBox3D" parent="LevelGeometry" unique_id=771185804]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
 size = Vector3(6, 8, 30)
-material = ExtResource("1_grid")
+material = SubResource("ShaderMaterial_3eai6")
 
 [node name="Interior" type="CSGBox3D" parent="LevelGeometry" unique_id=728613619]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)

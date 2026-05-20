@@ -23,8 +23,21 @@ uniform float grid_size = 1.0;
 uniform float line_width = 0.05;
 
 group_uniforms fading;
-// Controlled at runtime by OcclusionManager.gd — do not set manually
-instance uniform float fade_amount : hint_range(0.0, 1.0) = 1.0;
+// Updated every frame by OcclusionManager.gd — do not edit manually
+uniform vec3 player_world_pos = vec3(0.0);
+uniform vec3 camera_world_pos = vec3(0.0);
+uniform float vignette_inner : hint_range(0.0, 20.0, 0.1) = 1.5;
+uniform float vignette_outer : hint_range(0.0, 20.0, 0.1) = 4.0;
+uniform float vignette_offset : hint_range(0.0, 10.0, 0.1) = 2.0;
+
+group_uniforms clouds;
+uniform sampler2D cloud_texture : filter_linear_mipmap, repeat_enable;
+uniform float cloud_scale : hint_range(0.0, 0.05, 0.0001) = 0.003;
+uniform float cloud_speed : hint_range(0.0, 0.1, 0.0001) = 0.006;
+uniform vec2 cloud_direction = vec2(1.0, 0.5);
+uniform float cloud_threshold : hint_range(0.0, 1.0) = 0.5;
+uniform float cloud_feather : hint_range(0.0, 0.5) = 0.15;
+uniform float cloud_strength : hint_range(0.0, 1.0) = 0.35;
 
 group_uniforms lighting;
 uniform int cuts : hint_range(1, 8) = 3;
@@ -69,10 +82,33 @@ void fragment() {
 		base_color = albedo3.rgb;
 	}
 	
-	// Mix base noise color with the triplanar grid (only if enabled)!
 	ALBEDO = show_grid ? mix(base_color, grid_color, final_grid) : base_color;
+
+	// Cloud shadows — scrolling noise darkens terrain and walls
+	vec2 cloud_uv = world_pos.xz * cloud_scale
+				 + normalize(cloud_direction) * cloud_speed * TIME;
+	float cloud_val = texture(cloud_texture, cloud_uv).r;
+	float in_shadow = 1.0 - smoothstep(cloud_threshold, cloud_threshold + cloud_feather, cloud_val);
+	ALBEDO *= 1.0 - in_shadow * cloud_strength;
+
 	ROUGHNESS = 0.8;
-	if (dither_check(FRAGCOORD.xy, fade_amount)) discard;
+
+	// Offset the vignette center behind the player (toward the camera) in XZ
+	vec2 to_cam_xz = camera_world_pos.xz - player_world_pos.xz;
+	float to_cam_len = length(to_cam_xz);
+	vec2 vignette_center = player_world_pos.xz;
+	if (to_cam_len > 0.001) {
+		vignette_center += normalize(to_cam_xz) * vignette_offset;
+	}
+
+	// Distance from this surface pixel to the offset vignette center
+	float dist_xz = length(world_pos.xz - vignette_center);
+	float proximity_fade = smoothstep(vignette_inner, vignette_outer, dist_xz);
+
+	// Only affect vertical walls — floors/ceilings stay solid
+	float is_wall = 1.0 - world_normal.y;
+
+	if (dither_check(FRAGCOORD.xy, mix(proximity_fade, 1.0, 1.0 - is_wall))) discard;
 }
 
 void light() {

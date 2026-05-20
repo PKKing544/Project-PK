@@ -400,8 +400,8 @@ func _physics_process(delta):
 			move_and_slide()
 			
 		# Camera still follows
-		var target_cam_pos = global_position + Vector3(0, 1.5, 0)
-		camera_pivot.global_position = camera_pivot.global_position.lerp(target_cam_pos, delta * camera_follow_speed)
+		var death_cam_pos = global_position + Vector3(0, 1.5, 0)
+		camera_pivot.global_position = camera_pivot.global_position.lerp(death_cam_pos, delta * camera_follow_speed)
 		
 		if death_timer <= 0:
 			_respawn()

@@ -15,6 +15,10 @@ run/main_scene="uid://yaqaw8ov01q8"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/MarchingSquaresTerrain/plugin.cfg")
+
 [input]
 
 move_forward={
