@@ -1,3 +1,4 @@
+@tool
 extends CharacterBody3D
 class_name BaseEnemy
 
@@ -30,6 +31,10 @@ func preview_damage(amount: float):
 	incoming_damage = amount
 
 func _ready():
+	if Engine.is_editor_hint():
+		_setup_materials()
+		return
+		
 	add_to_group("enemy")
 	hp = max_hp
 	player = get_tree().get_first_node_in_group("player")
@@ -107,7 +112,8 @@ func _flash_color(color: Color):
 func _die():
 	is_dead = true
 	hp = 0
-	set_collision_layer_value(1, false)
+	collision_layer = 0
+	collision_mask = 0
 	
 	for mat in mesh_materials:
 		mat.albedo_color = Color(0.3, 0.3, 0.3)
@@ -135,6 +141,9 @@ func _update_debug_label():
 	debug_label.text = txt
 
 func _physics_process(delta: float):
+	if Engine.is_editor_hint():
+		return
+		
 	if is_dead:
 		_process_death_physics(delta)
 		return
@@ -148,8 +157,22 @@ func _physics_process(delta: float):
 func _process_death_physics(delta: float):
 	linger_timer -= delta
 	if linger_timer <= 0:
-		scale = scale.move_toward(Vector3.ZERO, delta * 4.0)
-		if scale.x <= 0.05:
+		var visuals_node = get_node_or_null("Visuals")
+		if visuals_node:
+			visuals_node.scale = visuals_node.scale.move_toward(Vector3.ZERO, delta * 4.0)
+			
+		for child in get_children():
+			if (child is Sprite3D or child is MeshInstance3D) and child.name != "EditorSurfaceGuide":
+				child.scale = child.scale.move_toward(Vector3.ZERO, delta * 4.0)
+				
+		var is_shrunk = true
+		if visuals_node and visuals_node.scale.x > 0.05:
+			is_shrunk = false
+		for child in get_children():
+			if (child is Sprite3D or child is MeshInstance3D) and child.name != "EditorSurfaceGuide":
+				if child.scale.x > 0.05:
+					is_shrunk = false
+		if is_shrunk:
 			queue_free()
 			
 	if not is_on_floor(): velocity.y -= 9.8 * delta

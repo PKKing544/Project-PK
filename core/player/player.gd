@@ -171,6 +171,9 @@ var death_rotation := 0.0
 var blob_shadow_ray: RayCast3D
 var blob_shadow_mesh: MeshInstance3D
 
+var is_on_slope := false
+var slope_factor := 0.0
+
 func _ready():
 	add_to_group("player")
 	
@@ -407,27 +410,13 @@ func _physics_process(delta):
 			_respawn()
 		return
 		
-	# Timers
-	if long_jump_timer > 0:
-		long_jump_timer -= delta
-		
-	if invincibility_timer > 0:
-		invincibility_timer -= delta
-		# Visual flickering for I-frames
-		visuals.visible = fmod(invincibility_timer, 0.1) > 0.05
-	else:
-		visuals.visible = true
+	_process_timers(delta)
 		
 	# Input Direction - Calculated early so all systems can access it
 	var input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	var move_dir = (camera_pivot.transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	var crouch_pressed = Input.is_action_pressed("sneak")
 		
-	if flash_timer > 0:
-		flash_timer -= delta
-		_apply_visual_flash(true)
-	else:
-		_apply_visual_flash(false)
-
 	# Handle Knockback
 	if knockback_comp and knockback_comp.is_in_hitstun():
 		return # Let component handle movement
@@ -456,11 +445,6 @@ func _physics_process(delta):
 	var target_cam_pos = global_position + Vector3(0, 1.5, 0)
 	camera_pivot.global_position = camera_pivot.global_position.lerp(target_cam_pos, delta * camera_follow_speed)
 	
-	var crouch_pressed = Input.is_action_pressed("sneak")
-	
-	if ability_cooldown_timer > 0:
-		ability_cooldown_timer -= delta
-		
 	if Input.is_action_just_pressed("ability") and equipped_ability and ability_cooldown_timer <= 0:
 		if equipped_ability.execute(self):
 			ability_cooldown_timer = equipped_ability.cooldown_sec
@@ -499,9 +483,50 @@ func _physics_process(delta):
 	if touching_wall:
 		wall_normal = get_wall_normal()
 	
-	# Melee Logic (Input, Swing timers)
 	var melee_pressed = Input.is_action_pressed("melee")
 	
+	# Subsystem processing
+	_process_combat_melee(delta, melee_pressed, crouch_pressed, wall_normal, touching_wall)
+	_process_airborne_gravity(delta, crouch_pressed, wall_normal, touching_wall)
+	_process_jump_inputs(delta, move_dir, crouch_pressed, wall_normal, touching_wall)
+	move_dir = _process_sliding_sneaking(delta, move_dir, input_dir, crouch_pressed)
+
+	var target_speed = speed
+	if is_dashing or is_wall_running:
+		target_speed = equipped_dash.speed if equipped_dash else 60.0
+	elif is_sliding:
+		target_speed = current_slide_speed
+	elif is_sneaking:
+		target_speed = speed * sneak_speed_multi
+	elif is_charging_melee and is_on_floor():
+		target_speed = speed * melee_charge_slow
+	
+	_process_horizontal_movement(delta, move_dir, target_speed)
+	
+	var current_hz_speed = Vector3(velocity.x, 0, velocity.z).length()
+	_process_camera_and_fov(delta, input_dir, touching_wall, wall_normal, current_hz_speed, target_speed)
+
+func _process_timers(delta: float) -> void:
+	if long_jump_timer > 0:
+		long_jump_timer -= delta
+		
+	if invincibility_timer > 0:
+		invincibility_timer -= delta
+		# Visual flickering for I-frames
+		visuals.visible = fmod(invincibility_timer, 0.1) > 0.05
+	else:
+		visuals.visible = true
+		
+	if flash_timer > 0:
+		flash_timer -= delta
+		_apply_visual_flash(true)
+	else:
+		_apply_visual_flash(false)
+
+	if ability_cooldown_timer > 0:
+		ability_cooldown_timer -= delta
+
+func _process_combat_melee(delta: float, melee_pressed: bool, crouch_pressed: bool, wall_normal: Vector3, touching_wall: bool) -> void:
 	if heavy_melee_cooldown_timer > 0:
 		heavy_melee_cooldown_timer -= delta
 	
@@ -563,7 +588,7 @@ func _physics_process(delta):
 		if melee_is_heavy and not has_pogoed_this_swing and touching_wall:
 			_execute_pogo(wall_normal, 1.0) # Walls always provide 100% bounce
 
-	# Airborne Logic & Gravity
+func _process_airborne_gravity(delta: float, crouch_pressed: bool, wall_normal: Vector3, touching_wall: bool) -> void:
 	wall_latch = false
 	
 	if not is_on_floor():
@@ -589,6 +614,7 @@ func _physics_process(delta):
 	else:
 		is_wall_running = false
 
+func _process_jump_inputs(delta: float, move_dir: Vector3, crouch_pressed: bool, wall_normal: Vector3, touching_wall: bool) -> void:
 	# Jump Buffer & Coyote & Double Jump
 	if Input.is_action_just_pressed("jump"):
 		jump_buffer_timer = jump_buffer_time
@@ -666,11 +692,10 @@ func _physics_process(delta):
 					velocity.x = hz_vel.x
 					velocity.z = hz_vel.z
 
-
-	
+func _process_sliding_sneaking(delta: float, move_dir: Vector3, input_dir: Vector2, crouch_pressed: bool) -> Vector3:
 	# Slope Detection
 	var slope_angle = 0.0
-	var is_on_slope = false
+	is_on_slope = false
 	var floor_normal = Vector3.UP
 	if is_on_floor():
 		floor_normal = get_floor_normal()
@@ -678,7 +703,7 @@ func _physics_process(delta):
 		if slope_angle > deg_to_rad(slide_slope_threshold_deg):
 			is_on_slope = true
 	
-	var slope_factor = move_dir.dot(floor_normal) if is_on_floor() else 0.0
+	slope_factor = move_dir.dot(floor_normal) if is_on_floor() else 0.0
 	
 	# Ground Sneak and Slide logic
 	is_sneaking = false
@@ -739,24 +764,6 @@ func _physics_process(delta):
 		# Uncapped downhill speed - let the momentum build like water!
 		current_slide_speed = max(current_slide_speed, min_speed)
 
-	var target_speed = speed
-	if is_dashing or is_wall_running:
-		target_speed = equipped_dash.speed if equipped_dash else 60.0
-	elif is_sliding:
-		target_speed = current_slide_speed
-	elif is_sneaking:
-		target_speed = speed * sneak_speed_multi
-	elif is_charging_melee and is_on_floor():
-		target_speed = speed * melee_charge_slow
-	
-	# Skater Camera Tilt (Procedural Roll)
-	var target_roll = 0.0
-	target_roll -= input_dir.x * max_camera_roll
-	if is_wall_running:
-		var w_dot = camera_pivot.transform.basis.x.dot(wall_normal)
-		target_roll += sign(w_dot) * 15.0 # Aggressive lean away from wall
-	camera.rotation_degrees.z = lerp(camera.rotation_degrees.z, target_roll, delta * 10.0)
-
 	# Ledge Prevention (Edge Detection)
 	if is_sneaking and move_dir != Vector3.ZERO and is_on_floor():
 		ledge_ray.global_position = global_position + (move_dir.normalized() * 0.8) + Vector3(0, 0.5, 0)
@@ -764,8 +771,12 @@ func _physics_process(delta):
 		if not ledge_ray.is_colliding():
 			move_dir = Vector3.ZERO 
 
+	return move_dir
+
+func _process_horizontal_movement(delta: float, move_dir: Vector3, target_speed: float) -> void:
 	# Force latch to wall
 	if wall_latch:
+		var wall_normal = get_wall_normal() if is_on_wall() else Vector3.ZERO
 		move_dir = -wall_normal
 		
 	# Assume forward dash if no input
@@ -793,7 +804,7 @@ func _physics_process(delta):
 		var dot = move_dir.dot(Vector3(velocity.x, 0, velocity.z).normalized())
 		var turn_t = clamp(1.0 - dot, 0.0, 1.0)  # 0 = going straight, 1 = full reverse
 		var effective_accel = accel * lerp(1.0, turn_accel_multi, turn_t)
-		if (is_sliding and is_on_floor()) or current_hz_speed < target_speed or dot < 0.7:
+		if (is_sliding and is_on_floor()) or current_hz_speed <= target_speed or dot < 0.7:
 			velocity.x = move_toward(velocity.x, move_dir.x * target_speed, effective_accel * delta)
 			velocity.z = move_toward(velocity.z, move_dir.z * target_speed, effective_accel * delta)
 	else:
@@ -821,7 +832,16 @@ func _physics_process(delta):
 	
 	if is_sliding and current_slide_speed <= speed + 0.1 and not is_on_slope:
 		is_sliding = false
-		
+
+func _process_camera_and_fov(delta: float, input_dir: Vector2, touching_wall: bool, wall_normal: Vector3, current_hz_speed: float, target_speed: float) -> void:
+	# Skater Camera Tilt (Procedural Roll)
+	var target_roll = 0.0
+	target_roll -= input_dir.x * max_camera_roll
+	if is_wall_running:
+		var w_dot = camera_pivot.transform.basis.x.dot(wall_normal)
+		target_roll += sign(w_dot) * 15.0 # Aggressive lean away from wall
+	camera.rotation_degrees.z = lerp(camera.rotation_degrees.z, target_roll, delta * 10.0)
+
 	# Shooting Logic & Zoom Linger
 	if zoom_linger_timer > 0:
 		zoom_linger_timer -= delta
@@ -854,7 +874,7 @@ func _physics_process(delta):
 	if debug_ui_label and hand_manager:
 		var max_ink = hand_manager.current_hand.max_ink if hand_manager.current_hand else 0.0
 		var att_status = "ON" if is_attachment_active else "OFF"
-		var horiz_vel = Vector3(velocity.x, 0, velocity.z).length()
+		var horiz_vel = current_hz_speed
 		var long_jump_text = " [LONG JUMP!]" if long_jump_timer > 0 else ""
 		debug_ui_label.text = "Speed: %.1f (Tgt: %.1f) m/s%s\nInk: %.1f / %.1f\nCharge: %.2fs\nAtt: %s" % [horiz_vel, target_speed, long_jump_text, hand_manager.current_ink, max_ink, hand_manager.charge_accumulated, att_status]
 	
