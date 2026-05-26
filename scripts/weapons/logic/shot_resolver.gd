@@ -11,11 +11,24 @@ func resolve_shot(compiled_mode: FireModeData, charge_ratio: float = 1.0, shot_c
 		# Calculate random spread here
 		var aim_dir = get_aim_direction(compiled_mode.spread_deg)
 		
+		# Velocity scaling calculation
+		var damage_mult = 1.0
+		var shooter = get_parent().get_parent()
+		if shooter and "velocity" in shooter and compiled_mode.velocity_scaling_multiplier > 1.0:
+			var speed = shooter.velocity.length()
+			var ratio = clamp(speed / compiled_mode.velocity_scaling_max_speed, 0.0, 1.0)
+			damage_mult = lerp(1.0, compiled_mode.velocity_scaling_multiplier, ratio)
+			
 		# For hitscan: calculate via RayCast
 		if compiled_mode.fire_type == FireModeData.FireType.HITSCAN:
-			_resolve_hitscan(compiled_mode, aim_dir, charge_ratio)
+			_resolve_hitscan(compiled_mode, aim_dir, charge_ratio, damage_mult)
 		else:
-			_resolve_projectile(compiled_mode, aim_dir, charge_ratio)
+			_resolve_projectile(compiled_mode, aim_dir, charge_ratio, damage_mult)
+			
+	# Apply Blast Cone
+	if compiled_mode.blast_cone_knockback > 0:
+		_apply_blast_cone(compiled_mode)
+
 			
 	# Apply Kickback logic to Player (Normal kickback)
 	if compiled_mode.kickback_force > 0:
@@ -47,6 +60,33 @@ func _resolve_reactive_kickback(mode: FireModeData):
 		# We hit a surface nearby! Push the player away from the aim direction
 		if shooter and shooter.has_method("apply_kickback"):
 			shooter.apply_kickback(-aim_dir * mode.reactive_kickback_force)
+
+func _apply_blast_cone(mode: FireModeData):
+	var start = muzzle_point.global_position
+	var base_dir = get_aim_direction(0.0)
+	var space_state = muzzle_point.get_world_3d().direct_space_state
+	
+	# Create a sphere query
+	var query = PhysicsShapeQueryParameters3D.new()
+	var sphere = SphereShape3D.new()
+	sphere.radius = mode.blast_cone_range
+	query.shape = sphere
+	query.transform = Transform3D(Basis(), start)
+	
+	var shooter = get_parent().get_parent()
+	if shooter is CollisionObject3D:
+		query.exclude = [shooter.get_rid()]
+		
+	var results = space_state.intersect_shape(query)
+	for res in results:
+		var collider = res.collider
+		if collider and collider.has_method("apply_kickback"):
+			var dir_to_target = (collider.global_position - start).normalized()
+			var angle = rad_to_deg(base_dir.angle_to(dir_to_target))
+			
+			if angle <= mode.blast_cone_angle * 0.5:
+				collider.apply_kickback(dir_to_target * mode.blast_cone_knockback)
+
 
 func get_aim_direction(spread_deg: float) -> Vector3:
 	if not player_camera or not muzzle_point: return Vector3.FORWARD
@@ -83,7 +123,7 @@ func get_aim_direction(spread_deg: float) -> Vector3:
 		
 	return base_dir
 
-func _resolve_hitscan(mode: FireModeData, aim_dir: Vector3, charge_ratio: float = 1.0):
+func _resolve_hitscan(mode: FireModeData, aim_dir: Vector3, charge_ratio: float = 1.0, damage_mult: float = 1.0):
 	var start = muzzle_point.global_position
 	var end = start + aim_dir * mode.range_m
 	
@@ -102,27 +142,29 @@ func _resolve_hitscan(mode: FireModeData, aim_dir: Vector3, charge_ratio: float 
 		final_end = result.position
 		var collider = result.collider
 		
+		var final_dmg = mode.damage * damage_mult
+		
 		# Preview damage to scale final lethal hits accurately
 		if collider.has_method("preview_damage"):
-			collider.preview_damage(mode.damage)
+			collider.preview_damage(final_dmg)
 			
 		# Apply Effects FIRST (so knockback calculates based on pre-damage HP)
 		for effect in mode.hit_effects:
 			if effect.has_method("apply_effect"):
-				effect.apply_effect(collider, result.position, result.normal, aim_dir, charge_ratio, mode.damage)
+				effect.apply_effect(collider, result.position, result.normal, aim_dir, charge_ratio, final_dmg)
 			
 		# Deal Damage or Healing
 		if mode.heals_target:
 			if collider.has_method("heal"):
-				collider.heal(mode.damage)
+				collider.heal(final_dmg)
 		else:
 			if collider.has_method("take_damage"):
-				collider.take_damage(mode.damage)
+				collider.take_damage(final_dmg)
 			
 	# Render Beam (Temporary FX)
 	_draw_beam(start, final_end)
 
-func _resolve_projectile(mode: FireModeData, aim_dir: Vector3, charge_ratio: float = 1.0):
+func _resolve_projectile(mode: FireModeData, aim_dir: Vector3, charge_ratio: float = 1.0, damage_mult: float = 1.0):
 	if not mode.projectile_scene:
 		push_warning("Attempted to fire projectile but no scene assigned!")
 		return
@@ -134,6 +176,8 @@ func _resolve_projectile(mode: FireModeData, aim_dir: Vector3, charge_ratio: flo
 	proj.global_position = muzzle_point.global_position + aim_dir * 0.5
 	
 	if proj.has_method("initialize"):
+		if "extra_damage_mult" in proj:
+			proj.extra_damage_mult = damage_mult
 		proj.initialize(aim_dir, mode, get_parent().get_parent(), charge_ratio)
 
 func _draw_beam(start: Vector3, end: Vector3):

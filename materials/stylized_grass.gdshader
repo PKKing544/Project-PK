@@ -71,6 +71,8 @@ uniform float fade_start_height : hint_range(0.0, 2.0, 0.01) = 0.2;
 uniform float fade_end_height : hint_range(-1.0, 1.0, 0.01) = 0.02;
 uniform float dither_near : hint_range(0.0, 20.0, 0.1) = 1.5;
 uniform float dither_far  : hint_range(0.0, 20.0, 0.1) = 4.0;
+uniform float max_render_distance = 250.0;
+uniform float render_distance_fade_margin = 20.0;
 
 group_uniforms clouds;
 uniform sampler2D cloud_texture : filter_linear_mipmap, repeat_enable;
@@ -289,7 +291,12 @@ void fragment() {
 	vec3 cam_pos = INV_VIEW_MATRIX[3].xyz;
 	float cam_dist = length(cam_pos - object_origin);
 	float proximity_fade = smoothstep(dither_near, dither_far, cam_dist);
-	if (dither_check(FRAGCOORD.xy, proximity_fade * ALPHA)) discard;
+
+	// Far distance dither fade: fade/clip grass beyond max_render_distance
+	float player_dist = distance(character_positions[0].xz, object_origin.xz);
+	float distance_fade = 1.0 - smoothstep(max_render_distance - render_distance_fade_margin, max_render_distance, player_dist);
+
+	if (dither_check(FRAGCOORD.xy, proximity_fade * distance_fade * ALPHA)) discard;
 }
 
 void light() {

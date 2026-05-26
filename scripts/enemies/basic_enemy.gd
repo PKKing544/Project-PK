@@ -1,3 +1,4 @@
+@tool
 extends BaseEnemy
 
 func _ready():

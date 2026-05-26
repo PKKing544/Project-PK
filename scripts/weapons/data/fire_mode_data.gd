@@ -41,5 +41,15 @@ enum TriggerType { AUTOMATIC, SEMI_AUTO, BURST, CHARGE }
 @export var min_spread_deg: float = 0.0
 @export var max_spread_deg: float = 10.0
 
+@export_group("Blast Cone")
+@export var blast_cone_knockback: float = 0.0
+@export var blast_cone_range: float = 10.0
+@export var blast_cone_angle: float = 45.0
+
+@export_group("Velocity Scaling")
+@export var velocity_scaling_multiplier: float = 1.0 # 1.0 means no scaling, >1.0 scales up
+@export var velocity_scaling_max_speed: float = 15.0 # Speed required to hit max multiplier
+
+
 @export_group("Effects")
 @export var hit_effects: Array[EffectData] = []

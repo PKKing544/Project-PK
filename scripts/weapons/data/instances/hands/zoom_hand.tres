@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="HandData" format=3 uid="uid://crvd4ops3b6gk"]
+
+[ext_resource type="Script" uid="uid://bsis3yh6n3aav" path="res://scripts/weapons/data/effect_data.gd" id="1_68odr"]
+[ext_resource type="Script" uid="uid://dskg001fqn105" path="res://scripts/weapons/data/fire_mode_data.gd" id="1_fire"]
+[ext_resource type="Script" uid="uid://d3okkd22brolr" path="res://scripts/weapons/data/hand_data.gd" id="2_hand"]
+
+[sub_resource type="Resource" id="Resource_primary"]
+script = ExtResource("1_fire")
+mode_name = "Zoom Sniper"
+trigger_type = 3
+damage = 20.0
+kickback_force = 10.0
+fire_rate_sec = 1.0
+ink_cost = 5.0
+recoil_deg = 5.0
+range_m = 300.0
+velocity_scaling_multiplier = 3.0
+
+[resource]
+script = ExtResource("2_hand")
+hand_name = "Zoom Sniper"
+passive_ink_regen_per_sec = 4.0
+primary_mode = SubResource("Resource_primary")

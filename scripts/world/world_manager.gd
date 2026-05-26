@@ -39,6 +39,7 @@ const CHUNK_POOL = [
 ]
 
 func _ready():
+	add_to_group("world_manager")
 	if not terrain_settings:
 		print("Error: No TerrainSettings assigned to WorldManager.")
 		return

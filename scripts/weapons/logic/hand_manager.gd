@@ -125,3 +125,13 @@ func equip_hand(hand: HandData, attachment: AttachmentData = null):
 
 func equip_attachment(attachment: AttachmentData):
 	current_attachment = attachment
+
+func is_charging() -> bool:
+	if not current_hand or not current_hand.primary_mode: return false
+	return is_trigger_pressed and current_hand.primary_mode.trigger_type == FireModeData.TriggerType.CHARGE
+
+func get_current_charge_ratio() -> float:
+	if not is_charging(): return 0.0
+	var max_charge = current_hand.primary_mode.max_charge_time_sec
+	if max_charge <= 0.0: return 0.0
+	return clamp(charge_accumulated / max_charge, 0.0, 1.0)

@@ -6,6 +6,8 @@ class_name BaseEnemy
 @export var max_hp: float = 100.0
 @export var knockback_weight: float = 800.0
 @export var base_color: Color = Color(0.2, 0.5, 0.6)
+@export var bubble_radius: float = 2.0
+
 
 var hp: float = 100.0
 var is_dead: bool = false

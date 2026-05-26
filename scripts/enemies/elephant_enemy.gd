@@ -1,3 +1,4 @@
+@tool
 extends BaseEnemy
 
 # Elephant specifics
@@ -191,8 +192,8 @@ func _cast_bubble():
 		
 		var shield_script = load("res://scripts/enemies/bubble_shield.gd")
 		var shield = shield_script.new()
-		get_parent().add_child(shield)
 		shield.target = best_target
+		get_parent().add_child(shield)
 		
 		if best_target is CollisionObject3D:
 			best_target.add_collision_exception_with(shield)

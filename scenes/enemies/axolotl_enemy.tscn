@@ -56,6 +56,7 @@ material = SubResource("StandardMaterial3D_4")
 size = Vector3(3, 3, 8)
 
 [node name="AxolotlEnemy" type="CharacterBody3D" unique_id=1630446793 groups=["enemy"]]
+transform = Transform3D(-1.4210858e-14, 1, -1.192093e-07, 1, 0, -1.192093e-07, -1.192093e-07, -1.192093e-07, -1, -4.2, -3.9499993, -1.2750005)
 script = ExtResource("1_axo")
 threat_radius = 100.0
 fire_radius = 65.0
@@ -65,6 +66,7 @@ charge_time = 2.5
 fire_delay = 0.5
 fireball_damage = 12.0
 projectile_spread = 0.2
+editor_snap_to_surface = null
 
 [node name="BodyCollision" type="CollisionShape3D" parent="." unique_id=1395307334]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.375, 0.3, 0)
@@ -76,30 +78,27 @@ visible = false
 mesh = SubResource("BoxMesh_1")
 
 [node name="Visuals" type="Node3D" parent="." unique_id=1836079870]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0, 1.45352, 0)
 
 [node name="SpriteTail" type="Sprite3D" parent="Visuals" unique_id=1836079871]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.35, 0.08)
-flip_h = true
+transform = Transform3D(0.99979997, -0.01056534, -0.0052874587, 0, 0.44750175, -0.8942694, 0.01181346, 0.89416873, 0.44748965, 0.0010950565, -0.29931468, 0.24066392)
 pixel_size = 0.007
-billboard = 2
-alpha_cut = 1
 texture_filter = 0
+alpha_cut = 1
 texture = ExtResource("3_ax_tail")
 
 [node name="SpriteBody" type="Sprite3D" parent="Visuals" unique_id=1836079872]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.35, 0.04)
-flip_h = true
+transform = Transform3D(1, 2.8361997e-08, -4.329617e-07, 5.0821977e-21, 0.99786127, 0.065366834, 4.3388968e-07, -0.065366834, 0.99786127, 1.1920929e-07, -0.5127441, -0.09772611)
 pixel_size = 0.007
-billboard = 2
-alpha_cut = 1
 texture_filter = 0
+alpha_cut = 1
 texture = ExtResource("4_ax_body")
 
 [node name="HeadPivot" type="Node3D" parent="Visuals" unique_id=781353514]
-transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, -0.35, -0.5)
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, -0.35, -0.25)
 
 [node name="SweetSpotHitbox" type="AnimatableBody3D" parent="Visuals/HeadPivot" unique_id=64604893 groups=["enemy_hurtbox"]]
+collision_mask = 0
 script = ExtResource("2_sweet")
 
 [node name="HeadCollision" type="CollisionShape3D" parent="Visuals/HeadPivot/SweetSpotHitbox" unique_id=1354126025]
@@ -108,7 +107,7 @@ visible = false
 shape = SubResource("BoxShape3D_2")
 
 [node name="HeadMesh" type="MeshInstance3D" parent="Visuals/HeadPivot" unique_id=1346366323]
-transform = Transform3D(1.24, 0, 0, 0, 1, 0, 0, 0, 0.19999999, 0, 0, 0.625)
+transform = Transform3D(1.24, 0, 0, 0, 1, 0, 0, 0, 0.19999999, 0, 0, 0.64903414)
 visible = false
 mesh = SubResource("BoxMesh_2")
 
@@ -119,31 +118,29 @@ mesh = SubResource("SphereMesh_1")
 surface_material_override/0 = SubResource("StandardMaterial3D_3")
 
 [node name="SpriteHead" type="Sprite3D" parent="Visuals/HeadPivot" unique_id=1836079873]
-transform = Transform3D(-2, 0, 0, 0, 2, 0, 0, 0, -2, 0, 0.46989816, -0.25)
+transform = Transform3D(-2, -1.6940659e-21, 2.842171e-14, 1.6940659e-21, 2, 2.842171e-14, -2.842171e-14, 2.842171e-14, -2, 0, 0, -0.25)
 pixel_size = 0.007
-billboard = 1
-alpha_cut = 1
 texture_filter = 0
+alpha_cut = 1
 texture = ExtResource("5_ax_head")
 
 [node name="SpriteWhiskers" type="Sprite3D" parent="Visuals/HeadPivot" unique_id=1836079874]
-transform = Transform3D(-2, 0, 0, 0, 2, 0, 0, 0, -2, 0, 0.46989816, -0.26999998)
+transform = Transform3D(-2, -1.6940659e-21, 2.842171e-14, 1.6940659e-21, 2, 2.842171e-14, -2.842171e-14, 2.842171e-14, -2, 0, 0, -0.27)
 pixel_size = 0.007
-billboard = 1
-alpha_cut = 1
 texture_filter = 0
+alpha_cut = 1
 texture = ExtResource("6_ax_wiskers")
 
 [node name="SpriteMiniSun" type="Sprite3D" parent="Visuals/HeadPivot" unique_id=1836079865]
-transform = Transform3D(-2, 0, 0, 0, 2, 0, 0, 0, -2, 0, 0.16989815, -0.14731598)
+transform = Transform3D(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0.3, -0.26)
 pixel_size = 0.007
-billboard = 1
-alpha_cut = 1
 texture_filter = 0
+alpha_cut = 1
 texture = ExtResource("7_minisun")
 
 [node name="FlamethrowerArea" type="Area3D" parent="Visuals/HeadPivot" unique_id=483395928]
-transform = Transform3D(1.5, 0, 0, 0, 1.1, 0, 0, 0, 1.3, 0, 0, -4.5)
+transform = Transform3D(1.5, 0, 0, 0, 1.1000001, 0, 0, 0, 1.3, 0, 0, -3.9016852)
+monitoring = false
 
 [node name="CollisionShape" type="CollisionShape3D" parent="Visuals/HeadPivot/FlamethrowerArea" unique_id=1091741070]
 transform = Transform3D(0.95, 0, 0, 0, 0.95, 0, 0, 0, 0.95, 0, 0, -0.48076916)
@@ -151,5 +148,6 @@ shape = SubResource("BoxShape3D_3")
 
 [node name="FlamethrowerMesh" type="MeshInstance3D" parent="Visuals/HeadPivot/FlamethrowerArea" unique_id=1747571286]
 transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 0, -0.48076916)
+visible = false
 mesh = SubResource("BoxMesh_3")
 metadata/_edit_group_ = true

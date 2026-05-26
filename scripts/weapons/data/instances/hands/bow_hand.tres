@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="HandData" format=3 uid="uid://bow_hand_uid"]
+
+[ext_resource type="Script" path="res://scripts/weapons/data/fire_mode_data.gd" id="1_fire"]
+[ext_resource type="Script" path="res://scripts/weapons/data/hand_data.gd" id="2_hand"]
+[ext_resource type="PackedScene" uid="uid://homingprojscene" path="res://scripts/weapons/logic/impl/homing_projectile.tscn" id="3_proj"]
+
+[sub_resource type="Resource" id="Resource_primary"]
+script = ExtResource("1_fire")
+mode_name = "Homing Bow"
+fire_type = 1
+trigger_type = 3
+damage = 50.0
+kickback_force = 5.0
+fire_rate_sec = 1.2
+ink_cost = 8.0
+spread_deg = 0.0
+recoil_deg = 1.0
+range_m = 200.0
+pellet_count = 1
+min_charge_time_sec = 0.3
+max_charge_time_sec = 1.0
+projectile_speed_m_s = 40.0
+projectile_gravity = 9.8
+projectile_scene = ExtResource("3_proj")
+
+[resource]
+script = ExtResource("2_hand")
+hand_name = "Homing Bow"
+passive_ink_regen_per_sec = 4.0
+primary_mode = SubResource("Resource_primary")

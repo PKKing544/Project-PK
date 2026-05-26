@@ -51,10 +51,16 @@ func _apply_wall_avoidance(delta: float):
 		(direction - transform.basis.y * side_offset).normalized()
 	]
 	
+	var excludes = [self.get_rid()]
+	if is_instance_valid(creator):
+		excludes.append(creator.get_rid())
+	for bubble in get_tree().get_nodes_in_group("bubble_shield"):
+		if is_instance_valid(bubble):
+			excludes.append(bubble.get_rid())
+			
 	for d in check_dirs:
 		var query = PhysicsRayQueryParameters3D.create(global_position, global_position + d * ray_len, 1) # Layer 1 (Env)
-		query.exclude = [self.get_rid()]
-		if is_instance_valid(creator): query.exclude.append(creator.get_rid())
+		query.exclude = excludes
 		
 		var res = space.intersect_ray(query)
 		if not res.is_empty():
@@ -70,7 +76,7 @@ func _apply_wall_avoidance(delta: float):
 func _on_body_entered(body: Node3D):
 	if body == creator:
 		return
-	if body.is_in_group("enemy") or body.is_in_group("enemy_hurtbox"):
+	if body.is_in_group("enemy") or body.is_in_group("enemy_hurtbox") or body.is_in_group("bubble_shield"):
 		return
 		
 	if body.has_method("take_damage"):

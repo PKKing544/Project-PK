@@ -16,12 +16,20 @@ extends BaseEnemy
 
 @export_group("Wall Cling & Visuals")
 @export var visuals_scale: float = 3.0
-@export var max_extend_dist: float = 0.4
+@export var max_extend_dist: float = 0.05
 @export var extend_speed: float = 4.0
 @export var surface_alignment_speed: float = 10.0
 @export var default_body_dist: float = 0.5
 @export var local_body_center: Vector3 = Vector3(0, -0.35, -0.2)
 @export var minisun_offset: Vector3 = Vector3(0, -0.3, -0.26)
+@export var editor_snap_to_surface: bool = true:
+	set(val):
+		editor_snap_to_surface = val
+		if Engine.is_editor_hint() and editor_snap_to_surface and is_inside_tree() and not _is_snapping:
+			_is_snapping = true
+			_editor_snap_to_surface()
+			_is_snapping = false
+
 
 enum State { SLEEP, CHARGING, FLAMETHROWER }
 var current_state: State = State.SLEEP
@@ -49,6 +57,7 @@ var surface_normal: Vector3 = Vector3.UP
 var current_charge_raise: float = 0.0
 var editor_helper: Node3D = null
 var _first_frame: bool = true
+var _is_snapping: bool = false
 
 var platform_node: Node3D = null
 var last_platform_global_transform: Transform3D
@@ -59,7 +68,9 @@ const ORB_SCENE      = preload("res://systems/pickups/pickup_orb.tscn")
 
 func _ready():
 	super._ready()
+	bubble_radius = 4.5
 	# 6. Viewport Alignment & Platform Tracking (Editor Tool Mode & Root Alignment)
+
 	# Transitioned to @tool mode so placement changes calculate and display in real-time.
 	# Initialized surface_normal to match editor-placed local Y-axis to prevent snapping.
 	# Changed alignment logic to rotate the root CharacterBody3D node itself, ensuring child 
@@ -67,6 +78,7 @@ func _ready():
 	surface_normal = global_transform.basis.y.normalized()
 	
 	if Engine.is_editor_hint():
+		set_notify_transform(true)
 		_create_editor_helper()
 	
 	visuals = get_node_or_null("Visuals")
@@ -246,9 +258,85 @@ func _track_player(delta: float):
 			head_pivot.transform.basis = Basis(current_q.slerp(target_q, delta * 5.0))
 			head_pivot.scale = Vector3(0.5, 0.5, 0.5)
 
+func _notification(what):
+	if what == NOTIFICATION_TRANSFORM_CHANGED and Engine.is_editor_hint() and not _is_snapping:
+		if editor_snap_to_surface:
+			_is_snapping = true
+			_editor_snap_to_surface()
+			_is_snapping = false
+
+func _editor_snap_to_surface():
+	var space_state = get_world_3d().direct_space_state
+	if not space_state: return
+	
+	# Gather excludes: self and all child CollisionObject3D nodes (like SweetSpotHitbox)
+	var excludes: Array[RID] = [get_rid()]
+	var stack = [self]
+	while stack.size() > 0:
+		var curr = stack.pop_back()
+		if curr is CollisionObject3D and curr != self:
+			excludes.append(curr.get_rid())
+		for child in curr.get_children():
+			stack.append(child)
+			
+	var best_hit = {}
+	
+	# Try using the editor camera raycast first, as it represents the user's line of sight
+	var cam = get_viewport().get_camera_3d()
+	if cam:
+		var cam_pos = cam.global_position
+		var drag_dir = (global_position - cam_pos).normalized()
+		if drag_dir.length_squared() > 0.001:
+			var start_dist = min(2.0, cam_pos.distance_to(global_position) - 0.1)
+			if start_dist > 0.0:
+				var ray_start = global_position - drag_dir * start_dist
+				var ray_end = global_position + drag_dir * 5.0
+				var query = PhysicsRayQueryParameters3D.create(ray_start, ray_end)
+				query.collision_mask = 1
+				query.exclude = excludes
+				var res = space_state.intersect_ray(query)
+				if res:
+					best_hit = res
+					
+	# Fallback if camera ray didn't hit anything: check local down and world down
+	if best_hit.is_empty():
+		var center = global_position + global_transform.basis.y.normalized() * 0.5
+		var fallbacks = [
+			-global_transform.basis.y.normalized() * 4.0, # local down
+			Vector3.DOWN * 4.0                            # world down
+		]
+		var closest_dist = 9999.0
+		for dir in fallbacks:
+			var query = PhysicsRayQueryParameters3D.create(center, center + dir)
+			query.collision_mask = 1
+			query.exclude = excludes
+			var res = space_state.intersect_ray(query)
+			if res and center.distance_to(res.position) < closest_dist:
+				closest_dist = center.distance_to(res.position)
+				best_hit = res
+				
+	if not best_hit.is_empty():
+		var hit_norm = best_hit.normal
+		surface_normal = hit_norm
+		
+		var global_y_scale = global_transform.basis.y.length()
+		var y_axis = hit_norm.normalized()
+		var base_dir = global_transform.basis.z
+		if abs(y_axis.dot(base_dir)) > 0.99:
+			base_dir = global_transform.basis.x
+		var z_axis = base_dir.slide(y_axis).normalized()
+		var x_axis = y_axis.cross(z_axis).normalized()
+		z_axis = x_axis.cross(y_axis).normalized()
+		
+		var target_basis = Basis(x_axis, y_axis, z_axis) * global_y_scale
+		var local_bottom = Vector3(0.375, -0.9, 0)
+		var target_position = best_hit.position - target_basis * local_bottom
+		
+		if not global_position.is_equal_approx(target_position) or not global_transform.basis.is_equal_approx(target_basis):
+			global_transform = Transform3D(target_basis, target_position)
+
 func _process(delta: float):
 	if Engine.is_editor_hint():
-		surface_normal = global_transform.basis.y.normalized()
 		if head_pivot:
 			head_pivot.transform.basis = Basis.IDENTITY
 			head_pivot.scale = Vector3(0.5, 0.5, 0.5)
@@ -263,29 +351,55 @@ func _process(delta: float):
 func _update_visuals_only(delta: float):
 	if is_dead: return
 	
-	# 1. Reset Visuals local basis to IDENTITY * visuals_scale
+	var player_node = player if is_instance_valid(player) else get_tree().get_first_node_in_group("player")
+	var target_global = global_position + global_transform.basis.z
+	
+	if player_node:
+		target_global = player_node.global_position + Vector3(0, 1.0, 0)
+	elif Engine.is_editor_hint():
+		var cam = get_viewport().get_camera_3d()
+		if cam:
+			target_global = cam.global_position
+			
 	if visuals:
 		visuals.transform.basis = Basis.IDENTITY * visuals_scale
 		
-		# Determine if the player is on the left side of the screen relative to the enemy
-		var player_node = player if is_instance_valid(player) else get_tree().get_first_node_in_group("player")
-		if player_node:
-			var is_left = false
-			var cam = get_viewport().get_camera_3d()
-			if cam:
-				var player_screen = cam.unproject_position(player_node.global_position + Vector3(0, 1.0, 0))
-				var enemy_screen = cam.unproject_position(global_position)
-				is_left = player_screen.x < enemy_screen.x
-			else:
-				var player_local = visuals.to_local(player_node.global_position + Vector3(0, 1.0, 0))
-				is_left = player_local.x < 0
-				
+		# Custom Y-billboard for body and tail: align with HeadPivot's rotation to stay parallel and prevent plane intersections
+		if head_pivot:
+			var head_basis = head_pivot.transform.basis.orthonormalized()
+			# Invert X and Z of head basis to look away from player (parallel to head plane)
+			var body_basis = Basis(-head_basis.x, head_basis.y, -head_basis.z)
+			
 			if sprite_body:
-				sprite_body.flip_h = is_left
+				var prev_scale = sprite_body.scale
+				sprite_body.transform.basis = body_basis * prev_scale.x
 			if sprite_tail:
-				sprite_tail.flip_h = is_left
+				var prev_scale = sprite_tail.scale
+				sprite_tail.transform.basis = body_basis * prev_scale.x
+		
+		# Tail Sway
+		if sprite_tail:
+			var sway = 0.0
+			if not is_dead and not Engine.is_editor_hint():
+				sway = sin(Time.get_ticks_msec() * 0.004) * 0.35
+			sprite_tail.rotate_object_local(Vector3.UP, sway)
+			
+		# Determine if the player is on the left side of the screen
+		var is_left = false
+		var cam = get_viewport().get_camera_3d()
+		if cam:
+			var player_cam_local = cam.to_local(target_global)
+			var enemy_cam_local = cam.to_local(global_position)
+			is_left = player_cam_local.x < enemy_cam_local.x
+		else:
+			var player_local = visuals.to_local(target_global)
+			is_left = player_local.x < 0
+			
+		if sprite_body:
+			sprite_body.flip_h = is_left
+		if sprite_tail:
+			sprite_tail.flip_h = is_left
 				
-	# 2. Smoothly raise/tilt the head sprites, whiskers, minisun while charging
 	var target_raise = 0.0
 	if current_state == State.CHARGING:
 		var progress = clamp(charge_timer / charge_time, 0.0, 1.0)
@@ -301,26 +415,6 @@ func _update_visuals_only(delta: float):
 		mouth_fireball.position.y = minisun_offset.y + current_charge_raise
 	if sweet_spot and sweet_spot.get_parent() == head_pivot:
 		sweet_spot.position.y = current_charge_raise
-		
-	# 3. Procedurally position, scale, and rotate SpriteBody to bridge SpriteTail and HeadPivot
-	if sprite_body and sprite_tail and head_pivot:
-		var tail_pos = sprite_tail.position
-		var head_pos = head_pivot.position
-		
-		var diff = head_pos - tail_pos
-		var current_dist = diff.length()
-		
-		sprite_body.position = tail_pos + diff * 0.5
-		
-		var body_y = diff.normalized()
-		var body_x = Vector3.RIGHT
-		if abs(body_y.dot(Vector3.RIGHT)) > 0.99:
-			body_x = Vector3.UP
-		var body_z = body_y.cross(body_x).normalized()
-		body_x = body_y.cross(body_z).normalized()
-		
-		var scale_y = current_dist / default_body_dist
-		sprite_body.transform.basis = Basis(body_x, body_y * scale_y, body_z)
 
 func _update_wall_cling_physics(delta: float):
 	if is_dead: return

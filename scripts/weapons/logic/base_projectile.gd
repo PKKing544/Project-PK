@@ -9,6 +9,7 @@ var fall_velocity: float = 0.0
 
 var shooter: Node3D
 var charge_ratio: float = 1.0
+var extra_damage_mult: float = 1.0
 
 func _ready():
 	self.body_entered.connect(_on_body_entered)
@@ -28,9 +29,12 @@ func initialize(direction: Vector3, data: FireModeData, shooter_node: Node3D = n
 func _physics_process(delta: float):
 	if not compiled_mode: return
 	
-	fall_velocity += compiled_mode.projectile_gravity * delta
+	var effective_gravity = lerp(compiled_mode.projectile_gravity * 1.5, compiled_mode.projectile_gravity * 0.1, charge_ratio)
+	var effective_speed = lerp(compiled_mode.projectile_speed_m_s * 0.3, compiled_mode.projectile_speed_m_s, charge_ratio)
 	
-	var current_vel = move_dir * compiled_mode.projectile_speed_m_s
+	fall_velocity += effective_gravity * delta
+	
+	var current_vel = move_dir * effective_speed
 	current_vel.y -= fall_velocity
 	
 	var step = current_vel * delta
@@ -58,7 +62,7 @@ func _on_body_entered(body: Node3D):
 			return # Pass through the bubble! (No damage, no destruction)
 			
 	# Execute effects FIRST (so knockback calculates based on pre-damage HP)
-	var final_dmg = compiled_mode.damage * lerp(1.0, 3.0, charge_ratio)
+	var final_dmg = compiled_mode.damage * lerp(1.0, 3.0, charge_ratio) * extra_damage_mult
 	
 	if body.has_method("preview_damage"):
 		body.preview_damage(final_dmg)

@@ -160,12 +160,16 @@ func _update_tier(new_tier: Tier):
 			content_3d.process_mode = PROCESS_MODE_INHERIT  # re-enable physics + AI
 			content_2d.hide()
 			collision_body.process_mode = PROCESS_MODE_INHERIT
+			if terrain_mesh:
+				terrain_mesh.show()
 		Tier.PURPLE:
 			content_3d.hide()
 			content_3d.process_mode = PROCESS_MODE_DISABLED  # pause CSG physics + enemy AI
 			content_2d.show()
 			if not skip_terrain:
 				collision_body.process_mode = PROCESS_MODE_DISABLED
+			if terrain_mesh:
+				terrain_mesh.hide()
 			
 			# Load billboard texture once on first PURPLE transition
 			if content_2d.texture == null and BILLBOARD_MAP.has(structure_scene_path):

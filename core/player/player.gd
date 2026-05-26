@@ -92,6 +92,8 @@ var base_camera_v: float = 0.0
 
 var debug_ui_label: Label
 var health_bar: ProgressBar
+var crosshair_rect: TextureRect
+var charge_meter_ui: ProgressBar
 
 # Nodes
 @onready var visuals = $Visuals
@@ -233,12 +235,26 @@ func _ready():
 	var crosshair_bg = CenterContainer.new()
 	crosshair_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	crosshair_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var crosshair_rect = TextureRect.new()
+	crosshair_rect = TextureRect.new()
 	crosshair_rect.texture = tex_crosshair
 	crosshair_rect.custom_minimum_size = Vector2(32, 32)
 	crosshair_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	crosshair_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	crosshair_bg.add_child(crosshair_rect)
+	
+	# Add the charge meter slightly below the crosshair
+	var vbox = VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(crosshair_rect)
+	
+	charge_meter_ui = ProgressBar.new()
+	charge_meter_ui.custom_minimum_size = Vector2(40, 8)
+	charge_meter_ui.show_percentage = false
+	charge_meter_ui.max_value = 1.0
+	charge_meter_ui.value = 0.0
+	charge_meter_ui.visible = false
+	vbox.add_child(charge_meter_ui)
+	
+	crosshair_bg.add_child(vbox)
 	canvas_layer.add_child(crosshair_bg)
 	add_child(canvas_layer)
 	
@@ -525,6 +541,25 @@ func _process_timers(delta: float) -> void:
 
 	if ability_cooldown_timer > 0:
 		ability_cooldown_timer -= delta
+
+	# Charge Meter UI Logic
+	if hand_manager and crosshair_rect and charge_meter_ui:
+		var charge_ratio = hand_manager.get_current_charge_ratio()
+		if charge_ratio > 0.0:
+			charge_meter_ui.visible = true
+			charge_meter_ui.value = charge_ratio
+		else:
+			charge_meter_ui.visible = false
+			charge_meter_ui.value = 0.0
+			
+		var tint_color = Color.WHITE
+		if equipped_hand and equipped_hand.primary_mode.velocity_scaling_multiplier > 1.0:
+			var speed_ratio = clamp(Vector3(velocity.x, 0, velocity.z).length() / equipped_hand.primary_mode.velocity_scaling_max_speed, 0.0, 1.0)
+			if speed_ratio >= 0.9:
+				tint_color = Color(1.0, 1.0, 0.0) # Yellow when max speed
+				
+		crosshair_rect.modulate = tint_color
+		charge_meter_ui.modulate = tint_color
 
 func _process_combat_melee(delta: float, melee_pressed: bool, crouch_pressed: bool, wall_normal: Vector3, touching_wall: bool) -> void:
 	if heavy_melee_cooldown_timer > 0:

@@ -9,6 +9,8 @@ var _grass_materials: Array[ShaderMaterial] = []
 var _last_scan_time: float = 0.0
 const SCAN_INTERVAL: float = 2.0 # Rescan every 2s to pick up newly baked chunks
 
+var world_manager: WorldManager = null
+
 func _ready():
 	if not player_node:
 		var players = get_tree().get_nodes_in_group("player")
@@ -19,6 +21,17 @@ func _ready():
 			if root:
 				player_node = root.find_child("Player", true, false)
 	_scan_for_grass_materials()
+	_find_world_manager()
+
+func _find_world_manager() -> void:
+	if not world_manager or not is_instance_valid(world_manager):
+		var wms = get_tree().get_nodes_in_group("world_manager")
+		if wms.size() > 0:
+			world_manager = wms[0]
+		else:
+			var root = get_tree().current_scene
+			if root:
+				world_manager = root.find_child("WorldManager", true, false)
 
 func _scan_for_grass_materials():
 	_grass_materials.clear()
@@ -55,6 +68,12 @@ func _process(delta):
 	char_data.fill(Vector4.ZERO)
 	char_data[0] = Vector4(pos.x, pos.y, pos.z, interact_radius)
 
+	var max_dist := 500.0
+	_find_world_manager()
+	if world_manager and is_instance_valid(world_manager):
+		max_dist = world_manager.view_bias * 2.5
+
 	for mat in _grass_materials:
 		if is_instance_valid(mat):
 			mat.set_shader_parameter("character_positions", char_data)
+			mat.set_shader_parameter("max_render_distance", max_dist)
