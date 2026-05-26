@@ -205,7 +205,9 @@ func _on_death():
 	pass
 
 func _process(_delta: float):
-	if is_instance_valid(debug_label):
+	if Engine.is_editor_hint():
+		return
+	if debug_label and is_instance_valid(debug_label):
 		_update_debug_label()
 
 func _update_debug_label():
