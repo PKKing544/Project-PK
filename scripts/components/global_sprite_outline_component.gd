@@ -32,6 +32,7 @@ func _scan_and_apply(node: Node):
 	if node is Sprite3D:
 		var mat = ShaderMaterial.new()
 		mat.shader = SHADER
+		mat.render_priority = 1
 		mat.set_shader_parameter("outline_color", outline_color)
 		mat.set_shader_parameter("outline_width", outline_width)
 		mat.set_shader_parameter("depth_offset", depth_offset)

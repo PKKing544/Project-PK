@@ -24,8 +24,18 @@ void vertex() {
 		MODELVIEW_NORMAL_MATRIX = mat3(MODELVIEW_MATRIX);
 	}
 
-	// Push the vertex backwards away from the camera to avoid Z-fighting
-	VERTEX.z -= depth_offset;
+	vec4 view_pos = MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
+	
+	// Pushing in VIEW space prevents rotated sprites from pushing sideways!
+	float original_z = view_pos.z;
+	view_pos.z -= depth_offset;
+	
+	if (original_z < -0.01 && view_pos.z < -0.01) {
+		float scale = view_pos.z / original_z;
+		view_pos.xy *= scale;
+	}
+	
+	POSITION = PROJECTION_MATRIX * view_pos;
 }
 
 void fragment() {

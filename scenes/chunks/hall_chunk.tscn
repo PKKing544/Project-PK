@@ -100,20 +100,52 @@ material = ExtResource("1_grid")
 
 [node name="ElephantEnemy" parent="." unique_id=1671382912 instance=ExtResource("2_qgawi")]
 transform = Transform3D(1, 0, 0, 0, 0.99904823, 0.043619387, 0, -0.043619387, 0.99904823, 28, 6.581053, 1.7145704)
+use_outline = null
+outline_color = null
+outline_width = null
+outline_depth_offset = null
+outline_use_billboard = null
 
 [node name="ElephantEnemy2" parent="." unique_id=1679801644 instance=ExtResource("2_qgawi")]
 transform = Transform3D(1, 0, 0, 0, 0.99904823, 0.043619387, 0, -0.043619387, 0.99904823, 24, 36.984493, -12.625264)
+use_outline = null
+outline_color = null
+outline_width = null
+outline_depth_offset = null
+outline_use_billboard = null
 
 [node name="AxolotlEnemy3" parent="." unique_id=2090233369 instance=ExtResource("3_56w75")]
 transform = Transform3D(0.13576517, 0.026171833, 1.1920173, -0.009924348, 1.1997036, -0.025210256, -1.1922634, -0.0070060603, 0.13594693, -4.1379604, 9.080011, 12.079152)
 editor_snap_to_surface = true
+bubble_radius = 4.5
+use_outline = null
+outline_color = null
+outline_width = null
+outline_depth_offset = null
+outline_use_billboard = null
 
 [node name="ElephantEnemy3" parent="." unique_id=824554348 instance=ExtResource("2_qgawi")]
 transform = Transform3D(1, 0, 0, 0, 0.99904823, 0.043619387, 0, -0.043619387, 0.99904823, -10, 6.144859, -8.275913)
+use_outline = null
+outline_color = null
+outline_width = null
+outline_depth_offset = null
+outline_use_billboard = null
 
 [node name="ElephantEnemy4" parent="." unique_id=860753139 instance=ExtResource("2_qgawi")]
 transform = Transform3D(1, 0, 0, 0, 0.99904823, 0.043619387, 0, -0.043619387, 0.99904823, 3, 10.96982, 10.531527)
+use_outline = null
+outline_color = null
+outline_width = null
+outline_depth_offset = null
+outline_use_billboard = null
 
 [node name="AxolotlEnemy" parent="." unique_id=1630446793 instance=ExtResource("3_56w75")]
 transform = Transform3D(-0.9983831, 0.056164145, 0.008737097, 0.056785572, 0.99228364, 0.110218376, -0.002479358, 0.11053633, -0.993869, 23.100792, 49.836536, -5.2982883)
 editor_snap_to_surface = true
+bubble_radius = 4.5
+use_outline = null
+outline_color = null
+outline_width = null
+outline_depth_offset = null
+outline_use_billboard = null

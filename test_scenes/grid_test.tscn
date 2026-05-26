@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://khpmg3v7pec7"]
 
-[ext_resource type="PackedScene" uid="uid://bubiarododkth" path="res://core/player/Player.tscn" id="1_player"]
+[ext_resource type="PackedScene" uid="uid://bubiarododkth" path="res://scenes/chunks/courtyard_chunk.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://wii3xbr52oem" path="res://scripts/world/world_manager.gd" id="2_world"]
 [ext_resource type="Material" uid="uid://t7bds6aj7mmm" path="res://art/prototype_grid.tres" id="3_px7vw"]
 [ext_resource type="Script" uid="uid://clokunsiwfnff" path="res://scripts/world/terrain_settings.gd" id="3_ydil4"]
@@ -21,10 +21,8 @@ sky_material = SubResource("SkyMat")
 
 [sub_resource type="Environment" id="Env"]
 background_mode = 2
-background_energy_multiplier = 1.0
 sky = SubResource("Sky")
 ambient_light_sky_contribution = 0.1
-ambient_light_energy = 1.0
 tonemap_mode = 3
 tonemap_exposure = 0.9
 glow_enabled = true
@@ -53,13 +51,11 @@ shadow_enabled = true
 
 [node name="Player" parent="." unique_id=1092714563 groups=["player"] instance=ExtResource("1_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-invincibility_duration = 0.4
 
 [node name="WorldManager" type="Node3D" parent="." unique_id=835541242 node_paths=PackedStringArray("player")]
 script = ExtResource("2_world")
-view_bias = 200.0
-terrain_settings = SubResource("Resource_t5rmt")
 player = NodePath("../Player")
+terrain_settings = SubResource("Resource_t5rmt")
 
 [node name="LevelGeometry" type="CSGCombiner3D" parent="." unique_id=172958449]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -370, 0)
@@ -73,15 +69,42 @@ material = ExtResource("3_px7vw")
 
 [node name="ElephantEnemy" parent="." unique_id=1839823746 instance=ExtResource("5_t5rmt")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 109, 39, 45)
+use_outline = null
+outline_color = null
+outline_width = null
+outline_depth_offset = null
+outline_use_billboard = null
 
 [node name="ElephantEnemy2" parent="." unique_id=280533684 instance=ExtResource("5_t5rmt")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -52, 7, 37)
+use_outline = null
+outline_color = null
+outline_width = null
+outline_depth_offset = null
+outline_use_billboard = null
 
 [node name="ElephantEnemy3" parent="." unique_id=1174916220 instance=ExtResource("5_t5rmt")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 8, -14)
+use_outline = null
+outline_color = null
+outline_width = null
+outline_depth_offset = null
+outline_use_billboard = null
 
 [node name="BasicEnemy" parent="." unique_id=1717088046 instance=ExtResource("6_rirtd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 1, 0)
+use_outline = null
+outline_color = null
+outline_width = null
+outline_depth_offset = null
+outline_use_billboard = null
 
 [node name="AxolotlEnemy" parent="." unique_id=1904918539 instance=ExtResource("7_01hy8")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 1, -19)
+editor_snap_to_surface = true
+bubble_radius = 4.5
+use_outline = null
+outline_color = null
+outline_width = null
+outline_depth_offset = null
+outline_use_billboard = null

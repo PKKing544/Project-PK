@@ -69,7 +69,7 @@ var knockback_comp: KnockbackComponent
 	set(val):
 		outline_width = val
 		_refresh_outlines()
-@export var outline_depth_offset: float = 0.001:
+@export var outline_depth_offset: float = 0.0:
 	set(val):
 		outline_depth_offset = val
 		_refresh_outlines()
@@ -361,7 +361,7 @@ func _setup_outlines():
 		if s and is_instance_valid(s):
 			var mat = ShaderMaterial.new()
 			mat.shader = outline_shader
-			mat.render_priority = -1
+			mat.render_priority = 1
 			mat.set_shader_parameter("tex", s.texture)
 			mat.set_shader_parameter("outline_color", outline_color)
 			mat.set_shader_parameter("outline_width", outline_width)

@@ -26,7 +26,7 @@ const BILLBOARD_MAP = {
 	"res://scenes/chunks/tower_chunk.tscn": "res://art/billboards/tower_chunk_billboard.jpg",
 	"res://scenes/chunks/courtyard_chunk.tscn": "res://art/billboards/courtyard_chunk_billboard.jpg",
 	"res://scenes/chunks/room_chunk.tscn": "res://art/billboards/room_chunk_billboard.jpg",
-	"res://scenes/chunks/hall_chunk.tscn": "res://art/billboards/hall_chunk_billboard.jpg"
+	"res://scenes/chunks/hall_chunk.tscn": "res://art/billboards/hall_chunk_billboard.png"
 }
 
 func _ready():
@@ -174,6 +174,10 @@ func _update_tier(new_tier: Tier):
 			# Load billboard texture once on first PURPLE transition
 			if content_2d.texture == null and BILLBOARD_MAP.has(structure_scene_path):
 				content_2d.texture = load(BILLBOARD_MAP[structure_scene_path])
+			
+			if structure_scene_path == "res://scenes/chunks/hall_chunk.tscn":
+				content_2d.pixel_size = 0.4
+
 
 func get_height_at_pos(global_pos: Vector2) -> float:
 	return noise.get_noise_2d(global_pos.x, global_pos.y) * terrain_settings.height_scale
