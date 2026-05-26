@@ -7,6 +7,7 @@ func _ready():
 	if knockback_comp:
 		knockback_comp.weight = 800.0 * scale.x
 		knockback_comp.wall_bounce_multiplier = 0.2
+	_refresh_outlines()
 
 func _update_debug_label():
 	if knockback_comp:

@@ -31,9 +31,12 @@ func _ready():
 	var cone = get_node_or_null("VisionCone")
 	if cone:
 		cone.visible = false
+		
+	_refresh_outlines()
 
 func _setup_debug_line():
 	debug_line = MeshInstance3D.new()
+	debug_line.name = "DebugLine"
 	var cyl = CylinderMesh.new()
 	cyl.top_radius = 0.05
 	cyl.bottom_radius = 0.05

@@ -8,6 +8,28 @@ class_name BaseEnemy
 @export var base_color: Color = Color(0.2, 0.5, 0.6)
 @export var bubble_radius: float = 2.0
 
+@export_group("Outline")
+@export var use_outline: bool = true:
+	set(val):
+		use_outline = val
+		_refresh_outlines()
+@export var outline_color: Color = Color.WHITE:
+	set(val):
+		outline_color = val
+		_refresh_outlines()
+@export var outline_width: float = 4.0:
+	set(val):
+		outline_width = val
+		_refresh_outlines()
+@export var outline_depth_offset: float = 0.001:
+	set(val):
+		outline_depth_offset = val
+		_refresh_outlines()
+@export var outline_use_billboard: bool = true:
+	set(val):
+		outline_use_billboard = val
+		_refresh_outlines()
+
 
 var hp: float = 100.0
 var is_dead: bool = false
@@ -35,6 +57,7 @@ func preview_damage(amount: float):
 func _ready():
 	if Engine.is_editor_hint():
 		_setup_materials()
+		_setup_outlines()
 		return
 		
 	add_to_group("enemy")
@@ -44,6 +67,7 @@ func _ready():
 	_setup_knockback()
 	_setup_debug_label()
 	_setup_materials()
+	_setup_outlines()
 
 func _setup_knockback():
 	knockback_comp = KnockbackComponent.new()
@@ -60,6 +84,8 @@ func _setup_debug_label():
 	add_child(debug_label)
 
 func _setup_materials():
+	mesh_materials.clear()
+	sprites.clear()
 	# Subclasses can override or we can try to find meshes automatically
 	for child in get_children():
 		if child is MeshInstance3D and child.mesh:
@@ -69,6 +95,51 @@ func _setup_materials():
 				mesh_materials.append(mat)
 		elif child is Sprite3D:
 			sprites.append(child)
+
+func _refresh_outlines():
+	if not is_node_ready(): return
+	_setup_outlines()
+
+func _setup_outlines():
+	var outline_shader = preload("res://materials/depth_outline.gdshader")
+	
+	for s in sprites:
+		if s and is_instance_valid(s):
+			if s.name == "SpriteMiniSun" or s.name == "MouthFireball":
+				s.material_overlay = null
+				continue
+			if s is DirectionalSprite3D:
+				s.use_outline = use_outline
+				s.outline_color = outline_color
+				s.outline_width = outline_width
+			else:
+				if not use_outline:
+					s.material_overlay = null
+				else:
+					var mat = ShaderMaterial.new()
+					mat.shader = outline_shader
+					mat.set_shader_parameter("tex", s.texture)
+					mat.set_shader_parameter("outline_color", outline_color)
+					mat.set_shader_parameter("outline_width", outline_width)
+					mat.set_shader_parameter("depth_offset", outline_depth_offset)
+					mat.set_shader_parameter("use_billboard", outline_use_billboard)
+					s.material_overlay = mat
+
+	for child in get_children():
+		if child is MeshInstance3D and child.mesh:
+			if child.name == "DebugLine" or child.name == "EditorSurfaceGuide":
+				child.material_overlay = null
+				continue
+			if not use_outline:
+				child.material_overlay = null
+			else:
+				var mat = StandardMaterial3D.new()
+				mat.cull_mode = BaseMaterial3D.CULL_FRONT
+				mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+				mat.albedo_color = outline_color
+				mat.grow = true
+				mat.grow_amount = outline_width * 0.01
+				child.material_overlay = mat
 
 
 func take_damage(amount: float, force_dir: Vector3 = Vector3.ZERO, raw_force: float = 0.0, _iframe_dur: float = 0.8, min_stun: float = 0.05):

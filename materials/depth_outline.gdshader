@@ -6,19 +6,23 @@ uniform vec4 outline_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform float outline_width = 1.0;
 uniform float depth_offset = 0.05;
 
+uniform bool use_billboard = true;
+
 void vertex() {
-	// Exact Godot 4 Fixed-Y Billboard source code
-	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(
-			vec4(normalize(cross(vec3(0.0, 1.0, 0.0), INV_VIEW_MATRIX[2].xyz)), 0.0),
-			vec4(0.0, 1.0, 0.0, 0.0),
-			vec4(normalize(cross(INV_VIEW_MATRIX[0].xyz, vec3(0.0, 1.0, 0.0))), 0.0),
-			MODEL_MATRIX[3]);
-	MODELVIEW_MATRIX = MODELVIEW_MATRIX * mat4(
-			vec4(cos(INSTANCE_CUSTOM.x), -sin(INSTANCE_CUSTOM.x), 0.0, 0.0),
-			vec4(sin(INSTANCE_CUSTOM.x), cos(INSTANCE_CUSTOM.x), 0.0, 0.0),
-			vec4(0.0, 0.0, 1.0, 0.0),
-			vec4(0.0, 0.0, 0.0, 1.0));
-	MODELVIEW_NORMAL_MATRIX = mat3(MODELVIEW_MATRIX);
+	if (use_billboard) {
+		// Exact Godot 4 Fixed-Y Billboard source code
+		MODELVIEW_MATRIX = VIEW_MATRIX * mat4(
+				vec4(normalize(cross(vec3(0.0, 1.0, 0.0), INV_VIEW_MATRIX[2].xyz)), 0.0),
+				vec4(0.0, 1.0, 0.0, 0.0),
+				vec4(normalize(cross(INV_VIEW_MATRIX[0].xyz, vec3(0.0, 1.0, 0.0))), 0.0),
+				MODEL_MATRIX[3]);
+		MODELVIEW_MATRIX = MODELVIEW_MATRIX * mat4(
+				vec4(cos(INSTANCE_CUSTOM.x), -sin(INSTANCE_CUSTOM.x), 0.0, 0.0),
+				vec4(sin(INSTANCE_CUSTOM.x), cos(INSTANCE_CUSTOM.x), 0.0, 0.0),
+				vec4(0.0, 0.0, 1.0, 0.0),
+				vec4(0.0, 0.0, 0.0, 1.0));
+		MODELVIEW_NORMAL_MATRIX = mat3(MODELVIEW_MATRIX);
+	}
 
 	// Push the vertex backwards away from the camera to avoid Z-fighting
 	VERTEX.z -= depth_offset;

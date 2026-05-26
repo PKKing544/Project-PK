@@ -67,6 +67,7 @@ const FIREBALL_SCENE = preload("res://scenes/enemies/fireball.tscn")
 const ORB_SCENE      = preload("res://systems/pickups/pickup_orb.tscn")
 
 func _ready():
+	outline_use_billboard = false
 	super._ready()
 	bubble_radius = 4.5
 	# 6. Viewport Alignment & Platform Tracking (Editor Tool Mode & Root Alignment)
@@ -143,6 +144,8 @@ func _ready():
 	if mouth_fireball: mouth_fireball.scale = Vector3.ZERO
 	if flamethrower_area: flamethrower_area.monitoring = false
 	if flamethrower_mesh: flamethrower_mesh.visible = false
+	
+	_refresh_outlines()
 
 func head_hit(amount: float):
 	if is_dead: return
