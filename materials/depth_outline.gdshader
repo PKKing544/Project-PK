@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode unshaded, depth_draw_opaque, cull_disabled;
+render_mode unshaded, depth_draw_never, cull_disabled;
 
 uniform sampler2D tex : source_color, filter_nearest;
 uniform vec4 outline_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);
