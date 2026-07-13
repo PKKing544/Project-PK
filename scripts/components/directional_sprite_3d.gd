@@ -203,6 +203,9 @@ func _update_material():
 	else:
 		material_override = null
 
+	if material_overlay is ShaderMaterial:
+		material_overlay.set_shader_parameter("tex", texture)
+
 func _update_texture_state():
 	# Used when changing properties in the editor
 	if Engine.is_editor_hint() and not is_inside_tree():

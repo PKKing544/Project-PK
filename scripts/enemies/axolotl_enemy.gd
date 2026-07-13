@@ -14,14 +14,20 @@ extends BaseEnemy
 @export var flamethrower_dps: float = 8.0
 @export var projectile_spread: float = 0.08 # Max radians of random spread
 
+@export_group("Tracking Settings")
+@export var head_y_offset: float = 0.0
+@export var head_y_range: Vector2 = Vector2(-5.0, 4.0)
+@export var head_x_range: Vector2 = Vector2(-4.0, 4.0)
+
 @export_group("Wall Cling & Visuals")
 @export var visuals_scale: float = 3.0
 @export var max_extend_dist: float = 0.05
 @export var extend_speed: float = 4.0
 @export var surface_alignment_speed: float = 10.0
 @export var default_body_dist: float = 0.5
-@export var local_body_center: Vector3 = Vector3(0, -0.35, -0.2)
+@export var local_body_center: Vector3 = Vector3(0, -0.65, -0.2)
 @export var minisun_offset: Vector3 = Vector3(0, -0.3, -0.26)
+@export var flipped_tail_x_offset: float = 0.08
 @export var editor_snap_to_surface: bool = true:
 	set(val):
 		editor_snap_to_surface = val
@@ -31,11 +37,15 @@ extends BaseEnemy
 			_is_snapping = false
 
 
-enum State { SLEEP, CHARGING, FLAMETHROWER }
-var current_state: State = State.SLEEP
+var state_machine: StateMachine
+var tail_animator: ProceduralAnimator
+var head_animator: ProceduralAnimator
 
 var charge_timer: float = 0.0
 var fireball_charged: bool = false
+
+var last_known_player_pos: Vector3 = Vector3.ZERO
+var hold_fireball_timer: float = 0.0
 
 # Nodes
 var visuals: Node3D
@@ -44,6 +54,7 @@ var sprite_tail: Sprite3D
 var sprite_head: Sprite3D
 var sprite_whiskers: Sprite3D
 var head_pivot: Node3D
+var aim_pivot: Node3D
 var mouth_fireball: Node3D
 var sweet_spot: Node3D
 var flamethrower_area: Area3D
@@ -53,8 +64,9 @@ var head_collision: CollisionShape3D = null
 
 # Visual helpers
 var default_head_pos: Vector3 = Vector3(0, -0.35, -0.5)
+var default_tail_pos: Vector3 = Vector3(0.216, -0.299, -0.105)
+var default_tail_offset: Vector3 = Vector3.ZERO
 var surface_normal: Vector3 = Vector3.UP
-var current_charge_raise: float = 0.0
 var editor_helper: Node3D = null
 var _first_frame: bool = true
 var _is_snapping: bool = false
@@ -77,14 +89,50 @@ func _ready():
 	# Changed alignment logic to rotate the root CharacterBody3D node itself, ensuring child 
 	# coordinate spaces remain clean and alignment gizmos reflect the physical surface.
 	surface_normal = global_transform.basis.y.normalized()
+	max_extend_dist = abs(max_extend_dist)
+	if max_extend_dist < 1.0: max_extend_dist = 6.0 # Fallback if it was too small
 	
 	if Engine.is_editor_hint():
 		set_notify_transform(true)
 		_create_editor_helper()
+	else:
+		state_machine = StateMachine.new()
+		state_machine.name = "StateMachine"
+		
+		var s_sleep = AxoSleep.new()
+		s_sleep.name = "AxoSleep"
+		state_machine.add_child(s_sleep)
+		
+		var s_charge = AxoCharge.new()
+		s_charge.name = "AxoCharge"
+		state_machine.add_child(s_charge)
+		
+		var s_attack = AxoAttack.new()
+		s_attack.name = "AxoAttack"
+		state_machine.add_child(s_attack)
+		
+		state_machine.initial_state = s_sleep
+		add_child(state_machine)
+		
+		tail_animator = ProceduralAnimator.new()
+		tail_animator.name = "TailAnimator"
+		tail_animator.sway_speed = 3.0
+		tail_animator.sway_amount = 0.15
+		add_child(tail_animator)
+		
+		head_animator = ProceduralAnimator.new()
+		head_animator.name = "HeadAnimator"
+		head_animator.sway_speed = 2.0
+		head_animator.sway_amount = 0.05
+		add_child(head_animator)
 	
 	visuals = get_node_or_null("Visuals")
 	if visuals:
 		head_pivot = visuals.get_node_or_null("HeadPivot")
+		aim_pivot = visuals.get_node_or_null("AimPivot")
+		if not aim_pivot:
+			aim_pivot = head_pivot # Fallback so the Axolotl doesn't completely break
+			
 		sprite_body = visuals.get_node_or_null("SpriteBody")
 		sprite_tail = visuals.get_node_or_null("SpriteTail")
 		
@@ -92,15 +140,21 @@ func _ready():
 		if sprite_tail: sprites.append(sprite_tail)
 		if head_pivot:
 			for child in head_pivot.get_children():
-				if child is Sprite3D:
+				if child is Sprite3D and child.name != "SpriteMiniSun":
 					sprites.append(child)
 		
 	if sprite_tail:
+		default_tail_pos = sprite_tail.position
 		sprite_tail.transform.basis = Basis().rotated(Vector3.UP, PI)
+		if tail_animator: tail_animator.target_nodes.append(sprite_tail)
 		
 	if head_pivot:
 		default_head_pos = head_pivot.position
 		
+	if sprite_tail and head_pivot:
+		default_tail_offset = default_tail_pos - default_head_pos
+		
+	if head_pivot:
 		# Shift head sprites forward to prevent clipping with the body, center Y to the pivot
 		sprite_head = head_pivot.get_node_or_null("SpriteHead")
 		if sprite_head:
@@ -118,9 +172,9 @@ func _ready():
 			head_collision = sweet_spot.get_node_or_null("HeadCollision")
 			
 			if not Engine.is_editor_hint():
-				# Re-parent SweetSpotHitbox to root to avoid inheriting Visuals scale and HeadPivot scale/shearing
 				sweet_spot.get_parent().remove_child(sweet_spot)
-				add_child(sweet_spot)
+				if aim_pivot: aim_pivot.add_child(sweet_spot)
+				else: add_child(sweet_spot)
 			
 		# SpriteMiniSun replaces the old sphere mesh — same scale-based charge animation
 		mouth_fireball = head_pivot.get_node_or_null("SpriteMiniSun")
@@ -128,6 +182,15 @@ func _ready():
 			mouth_fireball = head_pivot.get_node_or_null("MouthFireball")
 		flamethrower_area = head_pivot.get_node_or_null("FlamethrowerArea")
 		if flamethrower_area:
+			# Fix pivot dynamically so we can rotate the flamethrower from the head
+			var current_pos = flamethrower_area.position
+			flamethrower_area.position = Vector3.ZERO
+			for child in flamethrower_area.get_children():
+				if child is Node3D:
+					child.position.z += (current_pos.z / flamethrower_area.scale.z)
+					child.position.y += (current_pos.y / flamethrower_area.scale.y)
+					child.position.x += (current_pos.x / flamethrower_area.scale.x)
+					
 			flamethrower_mesh = flamethrower_area.get_node_or_null("FlamethrowerMesh")
 			if not flamethrower_area.body_entered.is_connected(_on_flame_body_entered):
 				flamethrower_area.body_entered.connect(_on_flame_body_entered)
@@ -193,73 +256,144 @@ func _apply_movement(delta: float):
 	elif is_on_ceiling():
 		surface_normal = Vector3.DOWN
 
-func _process_ai(delta: float):
-	if not player:
-		player = get_tree().get_first_node_in_group("player") 
-		if not player: return
-	
-	var dist_to_player = global_position.distance_to(player.global_position)
-	
-	if dist_to_player > threat_radius:
-		current_state = State.SLEEP
-	elif dist_to_player <= melee_radius:
-		current_state = State.FLAMETHROWER
-	else:
-		current_state = State.CHARGING
 
-	_execute_state_logic(delta, dist_to_player)
+var _los_excludes_cache: Array[RID] = []
+var _los_excludes_timer: float = 0.0
 
 # Raycast from head to player centre — returns true if nothing blocks the path.
 func _has_line_of_sight() -> bool:
 	if not head_pivot or not player: return false
-	var from = head_pivot.global_position
+	
+	# Fire from the mouth if possible, otherwise use the head pivot pushed slightly outward from the wall
+	var from = head_pivot.global_position + visuals.global_transform.basis.y * 0.5
+	if mouth_fireball:
+		from = mouth_fireball.global_position
+		
 	var to   = player.global_position + Vector3(0, 1.0, 0)
 	var space = get_world_3d().direct_space_state
 	var query = PhysicsRayQueryParameters3D.create(from, to)
 	query.collision_mask = 1
 	
-	# Exclude everything that isn't environment: self, player, all enemies, all their children
-	var excludes: Array[RID] = [player.get_rid()]
-	for node in get_tree().get_nodes_in_group("enemy"):
-		excludes.append(node.get_rid())
-		for child in node.get_children():
-			if child is CollisionObject3D:
-				excludes.append(child.get_rid())
-				for grandchild in child.get_children():
-					if grandchild is CollisionObject3D:
-						excludes.append(grandchild.get_rid())
-		# Also exclude bubble shields
-		if node.get("current_bubble_node") and is_instance_valid(node.current_bubble_node):
-			excludes.append(node.current_bubble_node.get_rid())
-	# Exclude enemy_hurtbox group too (SweetSpotHitbox etc)
-	for node in get_tree().get_nodes_in_group("enemy_hurtbox"):
-		if node is CollisionObject3D:
-			excludes.append(node.get_rid())
-	query.exclude = excludes
+	if _los_excludes_cache.is_empty() or _los_excludes_timer <= 0.0:
+		_los_excludes_cache.clear()
+		if player: _los_excludes_cache.append(player.get_rid())
+		for node in get_tree().get_nodes_in_group("enemy"):
+			_los_excludes_cache.append(node.get_rid())
+			for child in node.get_children():
+				if child is CollisionObject3D:
+					_los_excludes_cache.append(child.get_rid())
+					for grandchild in child.get_children():
+						if grandchild is CollisionObject3D:
+							_los_excludes_cache.append(grandchild.get_rid())
+			# Also exclude bubble shields
+			if node.get("current_bubble_node") and is_instance_valid(node.current_bubble_node):
+				_los_excludes_cache.append(node.current_bubble_node.get_rid())
+		# Exclude enemy_hurtbox group too (SweetSpotHitbox etc)
+		for node in get_tree().get_nodes_in_group("enemy_hurtbox"):
+			if node is CollisionObject3D:
+				_los_excludes_cache.append(node.get_rid())
+		_los_excludes_timer = 0.5
+		
+	query.exclude = _los_excludes_cache
 	
 	var result = space.intersect_ray(query)
 	return result.is_empty()
 
 func _track_player(delta: float):
-	if current_state != State.SLEEP and head_pivot and visuals:
-		var player_node = player if is_instance_valid(player) else get_tree().get_first_node_in_group("player")
-		if not player_node: return
-		var target_pos = player_node.global_position + Vector3(0, 1.0, 0)
-		var prev = head_pivot.global_transform
-		var up = visuals.global_transform.basis.y.normalized()
-		var look_dir = (target_pos - head_pivot.global_position).normalized()
-		if abs(look_dir.dot(up)) > 0.99:
-			up = visuals.global_transform.basis.x.normalized()
-		head_pivot.look_at(target_pos, up)
-		var target_tr = head_pivot.global_transform
-		head_pivot.global_transform = prev.interpolate_with(target_tr, delta * 5.0)
-		head_pivot.scale = Vector3(0.5, 0.5, 0.5) # Reset local scale to cancel parent scale of 2.0 and prevent scale drift
+	if _los_excludes_timer > 0.0:
+		_los_excludes_timer -= delta
+		
+	if Engine.is_editor_hint() or not visuals: return
+	
+	var has_los = _has_line_of_sight()
+	var player_node = player if is_instance_valid(player) else get_tree().get_first_node_in_group("player")
+	
+	# Tail animation speed based on state
+	if tail_animator:
+		if state_machine and state_machine.state and state_machine.state.name == "AxoCharge":
+			tail_animator.sway_speed = 15.0
+			tail_animator.sway_amount = 0.25
+		else:
+			tail_animator.sway_speed = 3.0
+			tail_animator.sway_amount = 0.15
+	
+	if state_machine and state_machine.state and state_machine.state.name != "AxoSleep":
+		if player_node and has_los:
+			last_known_player_pos = player_node.global_position + Vector3(0, 1.0, 0)
+			
+		# Always try to look at the player's actual position so it tracks vertically properly
+		var target_pos = player_node.global_position + Vector3(0, 1.0, 0) if player_node else global_position
+		
+		if aim_pivot:
+			aim_pivot.look_at(target_pos, global_transform.basis.y)
+			
+		if flamethrower_area and state_machine.state and state_machine.state.name == "AxoAttack":
+			flamethrower_area.look_at(target_pos, global_transform.basis.y)
+			var rot = flamethrower_area.rotation
+			rot.x = clamp(rot.x, deg_to_rad(-30.0), deg_to_rad(30.0))
+			flamethrower_area.rotation = rot
+		elif flamethrower_area:
+			flamethrower_area.rotation = flamethrower_area.rotation.lerp(Vector3.ZERO, delta * 5.0)
+			
+		# Crucial: Use visuals to_local so axes match the surface we're clinging to!
+		var target_local = visuals.to_local(target_pos)
+		var to_target_local = target_local - local_body_center
+		
+		var ideal_head_pos = local_body_center
+		ideal_head_pos.y = clamp(target_local.y + head_y_offset, head_y_range.x, head_y_range.y)
+		
+		var dir_xz = Vector3(to_target_local.x, 0, to_target_local.z)
+		if dir_xz.length_squared() > 0.01:
+			dir_xz = dir_xz.normalized()
+			ideal_head_pos += dir_xz * max_extend_dist
+			
+		ideal_head_pos.x = clamp(ideal_head_pos.x, head_x_range.x, head_x_range.y)
+		
+		var global_ideal = visuals.to_global(ideal_head_pos)
+		var global_start = visuals.to_global(local_body_center)
+		
+		# Raycast to prevent clipping
+		var space = get_world_3d().direct_space_state
+		var query = PhysicsRayQueryParameters3D.create(global_start, global_ideal)
+		query.collision_mask = 1
+		query.exclude = [get_rid()]
+		var res = space.intersect_ray(query)
+		
+		if not res.is_empty():
+			global_ideal = res.position - (global_ideal - global_start).normalized() * 0.6 # 0.6 is head radius
+			
+		if head_pivot:
+			var target_head_local = visuals.to_local(global_ideal)
+			head_pivot.position = head_pivot.position.lerp(target_head_local, delta * extend_speed)
+			
+			if last_known_player_pos != Vector3.ZERO:
+				var local_target = head_pivot.to_local(last_known_player_pos)
+				
+				# Calculate angle based on horizontal flip
+				var is_target_left = local_target.x < 0
+				var angle = atan2(local_target.y, local_target.x)
+				if is_target_left:
+					angle = -atan2(local_target.y, -local_target.x)
+					
+				# Lock the head from rotating too extremely up or down (prevent neck breaking)
+				angle = clamp(angle, deg_to_rad(-35.0), deg_to_rad(35.0))
+				
+				var dist_ratio = (head_pivot.position - local_body_center).length() / max_extend_dist
+				var tilt = 0.0
+				if dist_ratio > 0.95:
+					tilt = 0.3 * sign(local_target.y)
+					if is_target_left: tilt = -tilt # Reverse tilt if flipped
+					
+				var target_rot = angle + tilt
+				if sprite_head: sprite_head.rotation.z = lerp_angle(sprite_head.rotation.z, target_rot, delta * 8.0)
+				if sprite_whiskers: sprite_whiskers.rotation.z = lerp_angle(sprite_whiskers.rotation.z, target_rot, delta * 8.0)
+				if mouth_fireball: mouth_fireball.rotation.z = lerp_angle(mouth_fireball.rotation.z, target_rot, delta * 8.0)
 	else:
 		if head_pivot:
-			var current_q = Quaternion(head_pivot.transform.basis.orthonormalized())
-			var target_q = Quaternion.IDENTITY
-			head_pivot.transform.basis = Basis(current_q.slerp(target_q, delta * 5.0))
-			head_pivot.scale = Vector3(0.5, 0.5, 0.5)
+			head_pivot.position = head_pivot.position.lerp(default_head_pos, delta * extend_speed)
+			if sprite_head: sprite_head.rotation.z = lerp_angle(sprite_head.rotation.z, 0.0, delta * 5.0)
+			if sprite_whiskers: sprite_whiskers.rotation.z = lerp_angle(sprite_whiskers.rotation.z, 0.0, delta * 5.0)
+			if mouth_fireball: mouth_fireball.rotation.z = lerp_angle(mouth_fireball.rotation.z, 0.0, delta * 5.0)
 
 func _notification(what):
 	if what == NOTIFICATION_TRANSFORM_CHANGED and Engine.is_editor_hint() and not _is_snapping:
@@ -332,7 +466,7 @@ func _editor_snap_to_surface():
 		z_axis = x_axis.cross(y_axis).normalized()
 		
 		var target_basis = Basis(x_axis, y_axis, z_axis) * global_y_scale
-		var local_bottom = Vector3(0.375, -0.9, 0)
+		var local_bottom = Vector3(0, -0.9, 0)
 		var target_position = best_hit.position - target_basis * local_bottom
 		
 		if not global_position.is_equal_approx(target_position) or not global_transform.basis.is_equal_approx(target_basis):
@@ -365,28 +499,6 @@ func _update_visuals_only(delta: float):
 			target_global = cam.global_position
 			
 	if visuals:
-		visuals.transform.basis = Basis.IDENTITY * visuals_scale
-		
-		# Custom Y-billboard for body and tail: align with HeadPivot's rotation to stay parallel and prevent plane intersections
-		if head_pivot:
-			var head_basis = head_pivot.transform.basis.orthonormalized()
-			# Invert X and Z of head basis to look away from player (parallel to head plane)
-			var body_basis = Basis(-head_basis.x, head_basis.y, -head_basis.z)
-			
-			if sprite_body:
-				var prev_scale = sprite_body.scale
-				sprite_body.transform.basis = body_basis * prev_scale.x
-			if sprite_tail:
-				var prev_scale = sprite_tail.scale
-				sprite_tail.transform.basis = body_basis * prev_scale.x
-		
-		# Tail Sway
-		if sprite_tail:
-			var sway = 0.0
-			if not is_dead and not Engine.is_editor_hint():
-				sway = sin(Time.get_ticks_msec() * 0.004) * 0.35
-			sprite_tail.rotate_object_local(Vector3.UP, sway)
-			
 		# Determine if the player is on the left side of the screen
 		var is_left = false
 		var cam = get_viewport().get_camera_3d()
@@ -398,26 +510,35 @@ func _update_visuals_only(delta: float):
 			var player_local = visuals.to_local(target_global)
 			is_left = player_local.x < 0
 			
-		if sprite_body:
-			sprite_body.flip_h = is_left
-		if sprite_tail:
-			sprite_tail.flip_h = is_left
+		if visuals is SegmentedSpriteRig:
+			visuals.flip_horizontal = is_left
+		else:
+			if sprite_body:
+				sprite_body.flip_h = is_left
+			if sprite_tail:
+				sprite_tail.flip_h = is_left
+			if sprite_head:
+				sprite_head.flip_h = is_left
+				sprite_head.flip_v = false
+			if sprite_whiskers:
+				sprite_whiskers.flip_h = is_left
+				sprite_whiskers.flip_v = false
+			if mouth_fireball and "flip_h" in mouth_fireball:
+				mouth_fireball.flip_h = is_left
+				mouth_fireball.flip_v = false
 				
-	var target_raise = 0.0
-	if current_state == State.CHARGING:
-		var progress = clamp(charge_timer / charge_time, 0.0, 1.0)
-		target_raise = 0.45 * progress  # Up to 0.45 units raise
+	if not aim_pivot or not is_instance_valid(player): return
 	
-	current_charge_raise = lerp(current_charge_raise, target_raise, delta * 5.0)
+	var aim = -aim_pivot.global_transform.basis.z.normalized()
+	var aim_flat = Vector2(aim.x, aim.z).normalized()
+	var player_dir = (player.global_position - global_position).normalized()
+	var p_flat = Vector2(player_dir.x, player_dir.z).normalized()
 	
-	if sprite_head:
-		sprite_head.position.y = current_charge_raise
-	if sprite_whiskers:
-		sprite_whiskers.position.y = current_charge_raise
-	if mouth_fireball:
-		mouth_fireball.position.y = minisun_offset.y + current_charge_raise
-	if sweet_spot and sweet_spot.get_parent() == head_pivot:
-		sweet_spot.position.y = current_charge_raise
+	var dot = aim_flat.dot(p_flat)
+	if aim.y > 0.8: dot = 1.0
+	
+	if dot > 0.95:
+		state_machine.transition_to("AxoCharge")
 
 func _update_wall_cling_physics(delta: float):
 	if is_dead: return
@@ -444,10 +565,6 @@ func _update_wall_cling_physics(delta: float):
 	if has_node("BodyCollision"):
 		var col = $BodyCollision
 		col.transform.basis = Basis.IDENTITY
-		
-	# 3. Reset Visuals local basis to IDENTITY * visuals_scale
-	if visuals:
-		visuals.transform.basis = Basis.IDENTITY * visuals_scale
 
 func _snap_to_nearest_surface():
 	var space_state = get_world_3d().direct_space_state
@@ -485,7 +602,7 @@ func _snap_to_nearest_surface():
 		global_transform.basis = Basis(x_axis, y_axis, z_axis) * global_y_scale
 		
 		# 2. Position the root so that the bottom of the collision box (local y = -0.9) is flush with the wall
-		var local_bottom = Vector3(0.375, -0.9, 0)
+		var local_bottom = Vector3(0, -0.9, 0)
 		global_position = hit_pos - global_transform.basis * local_bottom
 		
 		# Reset platforms tracking
@@ -523,36 +640,13 @@ func _physics_process(delta: float):
 		# Track player in physics frame
 		_track_player(delta)
 		
-		# Neck Orbit / HeadPivot Position Update (Physics)
-		if visuals and head_pivot:
-			var player_node = player if is_instance_valid(player) else get_tree().get_first_node_in_group("player")
-			var target_head_pos = default_head_pos
-			
-			if current_state != State.SLEEP and player_node:
-				var target_pos = player_node.global_position + Vector3(0, 1.0, 0)
-				var player_local = visuals.to_local(target_pos)
-				
-				var to_player_local = player_local - local_body_center
-				var dist_to_player_local = to_player_local.length()
-				
-				var extend_ratio = clamp(dist_to_player_local / 10.0, 0.4, 1.0)
-				var target_extend_dist = max_extend_dist * extend_ratio
-				
-				var dir = to_player_local.normalized()
-				if dir.y < 0.1:
-					dir.y = 0.1
-					dir = dir.normalized()
-					
-				target_head_pos = local_body_center + dir * target_extend_dist
-				
-			head_pivot.position = head_pivot.position.lerp(target_head_pos, delta * extend_speed)
-			
+
 		# Sync decoupled hitbox (SweetSpotHitbox)
 		if sweet_spot and head_pivot:
 			sweet_spot.global_transform = head_pivot.global_transform
 			sweet_spot.global_transform.basis = head_pivot.global_transform.basis.orthonormalized()
 			if head_collision:
-				head_collision.position = Vector3(0, current_charge_raise * (visuals_scale * 0.5), 0)
+				head_collision.position = Vector3.ZERO
 				
 		var found_platform: Node3D = null
 		if is_on_floor() or is_on_wall() or is_on_ceiling():
@@ -569,43 +663,6 @@ func _physics_process(delta: float):
 		else:
 			platform_node = null
 
-func _execute_state_logic(delta: float, dist_to_player: float):
-	if current_state == State.SLEEP:
-		charge_timer = 0.0
-		fireball_charged = false
-		if mouth_fireball: mouth_fireball.scale = mouth_fireball.scale.lerp(Vector3.ZERO, delta * 5.0)
-		if flamethrower_area: flamethrower_area.monitoring = false
-		if flamethrower_mesh: flamethrower_mesh.visible = false
-		
-	elif current_state == State.CHARGING:
-		if flamethrower_area: flamethrower_area.monitoring = false
-		if flamethrower_mesh: flamethrower_mesh.visible = false
-		
-		if not fireball_charged:
-			charge_timer += delta
-			var scale_val = clamp(charge_timer / charge_time, 0.0, 1.0)
-			var base_minisun_scale = Vector3(-2, 2, -2)
-			if mouth_fireball: mouth_fireball.scale = base_minisun_scale * scale_val
-			if charge_timer >= charge_time:
-				fireball_charged = true
-				if mouth_fireball: mouth_fireball.scale = base_minisun_scale * 1.5
-		else:
-			# Hold fire until we have a clear shot
-			if dist_to_player <= fire_radius and _has_line_of_sight():
-				_fire_projectile()
-				fireball_charged = false
-				charge_timer = -fire_delay
-				if mouth_fireball: mouth_fireball.scale = Vector3.ZERO
-				
-	elif current_state == State.FLAMETHROWER:
-		var can_see = _has_line_of_sight()
-		if flamethrower_area:
-			flamethrower_area.monitoring = can_see
-			if flamethrower_mesh: flamethrower_mesh.visible = can_see
-			if can_see:
-				_tick_flamethrower_damage(delta)
-		
-		if mouth_fireball: mouth_fireball.scale = mouth_fireball.scale.lerp(Vector3.ZERO, delta * 40.0)
 
 func _tick_flamethrower_damage(delta: float):
 	for body in flamethrower_area.get_overlapping_bodies():
@@ -621,17 +678,23 @@ func _tick_flamethrower_damage(delta: float):
 				body.take_damage(0.0, push_dir.normalized(), 250.0, 0.1, 0.02)
 
 func _fire_projectile():
-	if not head_pivot: return
+	if not aim_pivot: return
 	var proj = FIREBALL_SCENE.instantiate()
 	get_parent().add_child(proj)
-	proj.creator = self # <--- Add this line
-	proj.global_position = head_pivot.global_position + (-head_pivot.global_transform.basis.z * 1.5)
+	proj.creator = self
+	if mouth_fireball:
+		proj.global_position = mouth_fireball.global_position
+	else:
+		proj.global_position = head_pivot.global_position + (-aim_pivot.global_transform.basis.z * 0.5)
 	
-	var dir = -head_pivot.global_transform.basis.z.normalized()
+	var dir = -aim_pivot.global_transform.basis.z.normalized()
 	# Apply slight random spread
 	var random_offset = Vector3(randf_range(-1,1), randf_range(-1,1), randf_range(-1,1)) * projectile_spread
 	proj.direction = (dir + random_offset).normalized()
-	proj.speed = projectile_speed
+	if "start_speed" in proj:
+		proj.start_speed = projectile_speed
+	elif "speed" in proj:
+		proj.speed = projectile_speed
 	proj.damage = fireball_damage
 
 func _on_flame_body_entered(body: Node3D):
@@ -667,8 +730,8 @@ func _create_editor_helper():
 	editor_helper.name = "EditorSurfaceGuide"
 	
 	# Center of collision shape offset: Vector3(0.375, 0.3, 0)
-	# Bottom of collision shape offset: Vector3(0.375, -0.9, 0)
-	var local_bottom = Vector3(0.375, -0.9, 0)
+	# Bottom of collision shape offset: Vector3(0, -0.9, 0)
+	var local_bottom = Vector3(0, -0.9, 0)
 	
 	# Create a flat box representing the contact rectangle (matching bottom of collision shape)
 	var disc_mesh = MeshInstance3D.new()

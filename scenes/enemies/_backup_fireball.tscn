@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://b3e4pab1tj52e"]
+
+[ext_resource type="Script" uid="uid://cxmd0hkqyvnvi" path="res://scripts/enemies/projectiles/fireball.gd" id="1_fb"]
+[ext_resource type="Texture2D" uid="uid://bf3ihr5heoo1q" path="res://art/Enemies/Minisun.png" id="2_minisun"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 0.25
+
+[node name="Fireball" type="Area3D" unique_id=100121824]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 1, 0)
+script = ExtResource("1_fb")
+homing_strength = 6.0
+
+[node name="CollisionShape" type="CollisionShape3D" parent="." unique_id=345221804]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
+shape = SubResource("SphereShape3D_1")
+
+[node name="SpriteMinisun" type="Sprite3D" parent="." unique_id=2085767606]
+pixel_size = 0.007
+billboard = 1
+alpha_cut = 1
+texture_filter = 0
+texture = ExtResource("2_minisun")

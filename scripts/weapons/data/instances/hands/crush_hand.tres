@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dskg001fqn105" path="res://scripts/weapons/data/fire_mode_data.gd" id="1_fire"]
 [ext_resource type="Script" uid="uid://bsis3yh6n3aav" path="res://scripts/weapons/data/effect_data.gd" id="1_mplsg"]
+[ext_resource type="Texture2D" uid="uid://butkobi3sfkdm" path="res://art/Crushhand.png" id="1_shs44"]
 [ext_resource type="Script" uid="uid://d3okkd22brolr" path="res://scripts/weapons/data/hand_data.gd" id="2_hand"]
 [ext_resource type="PackedScene" uid="uid://bhyunccofy36y" path="res://scripts/weapons/logic/impl/burst_projectile.tscn" id="3_proj"]
 
@@ -29,5 +30,6 @@ blast_cone_range = 5.0
 [resource]
 script = ExtResource("2_hand")
 hand_name = "Crush Shotgun"
+hand_texture = ExtResource("1_shs44")
 passive_ink_regen_per_sec = 4.0
 primary_mode = SubResource("Resource_primary")

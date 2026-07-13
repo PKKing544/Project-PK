@@ -7,8 +7,8 @@
 [ext_resource type="Texture2D" uid="uid://e3xp6ruwjnqn" path="res://art/Enemies/Elephant_below.png" id="5_fpk5u"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
-radius = 1.5
-height = 3.0
+radius = 1.65
+height = 3.3
 
 [sub_resource type="Shader" id="Shader_2tmyh"]
 code = "
@@ -63,7 +63,7 @@ knockback_weight = 500.0
 base_color = Color(0.19169998, 0.5545099, 0.71, 1)
 
 [node name="CollisionShape" type="CollisionShape3D" parent="." unique_id=751698217]
-transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 0.22, 0, 0.1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
 shape = SubResource("CapsuleShape3D_1")
 
 [node name="DirectionalSprite" type="Sprite3D" parent="." unique_id=1481565641]

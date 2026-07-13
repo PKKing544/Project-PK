@@ -21,7 +21,7 @@ class_name BaseEnemy
 	set(val):
 		outline_width = val
 		_refresh_outlines()
-@export var outline_depth_offset: float = 0.001:
+@export var outline_depth_offset: float = 0.25:
 	set(val):
 		outline_depth_offset = val
 		_refresh_outlines()
@@ -86,45 +86,50 @@ func _setup_debug_label():
 func _setup_materials():
 	mesh_materials.clear()
 	sprites.clear()
-	# Subclasses can override or we can try to find meshes automatically
-	for child in get_children():
+	_find_visual_nodes_recursive(self)
+
+func _find_visual_nodes_recursive(node: Node):
+	for child in node.get_children():
 		if child is MeshInstance3D and child.mesh:
 			var mat = child.mesh.surface_get_material(0)
 			if not mat: mat = child.mesh.material
 			if mat is StandardMaterial3D:
 				mesh_materials.append(mat)
-		elif child is Sprite3D:
+		elif child is Sprite3D and child.name != "SpriteMiniSun":
 			sprites.append(child)
+		_find_visual_nodes_recursive(child)
 
 func _refresh_outlines():
 	if not is_node_ready(): return
-	_setup_outlines()
+	if not use_outline:
+		for s in sprites:
+			if s and is_instance_valid(s):
+				s.material_overlay = null
+	else:
+		_setup_outlines()
 
 func _setup_outlines():
+	if not use_outline: return
 	var outline_shader = preload("res://materials/depth_outline.gdshader")
-	
 	for s in sprites:
 		if s and is_instance_valid(s):
-			if s.name == "SpriteMiniSun" or s.name == "MouthFireball":
-				s.material_overlay = null
+			if s is RigPart3D:
 				continue
+			var mat = ShaderMaterial.new()
+			mat.shader = outline_shader
+			mat.render_priority = 1
+			mat.set_shader_parameter("tex", s.texture)
+			mat.set_shader_parameter("outline_color", outline_color)
+			mat.set_shader_parameter("outline_width", outline_width)
+			mat.set_shader_parameter("depth_offset", outline_depth_offset)
+			var do_shader_billboard = outline_use_billboard
+			if s.billboard == BaseMaterial3D.BILLBOARD_DISABLED:
+				do_shader_billboard = false
+			mat.set_shader_parameter("use_billboard", do_shader_billboard)
+			s.material_overlay = mat
 			if s is DirectionalSprite3D:
-				s.use_outline = use_outline
-				s.outline_color = outline_color
-				s.outline_width = outline_width
-			else:
-				if not use_outline:
-					s.material_overlay = null
-				else:
-					var mat = ShaderMaterial.new()
-					mat.shader = outline_shader
-					mat.render_priority = 1
-					mat.set_shader_parameter("tex", s.texture)
-					mat.set_shader_parameter("outline_color", outline_color)
-					mat.set_shader_parameter("outline_width", outline_width)
-					mat.set_shader_parameter("depth_offset", outline_depth_offset)
-					mat.set_shader_parameter("use_billboard", outline_use_billboard)
-					s.material_overlay = mat
+				s.use_outline = false
+
 
 	for child in get_children():
 		if child is MeshInstance3D and child.mesh:

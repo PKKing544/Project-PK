@@ -1,5 +1,6 @@
 [gd_resource type="Resource" script_class="HandData" format=3 uid="uid://crvd4ops3b6gk"]
 
+[ext_resource type="Texture2D" uid="uid://ddeolr0wdooy" path="res://art/Zoomhand2.png" id="1_43gey"]
 [ext_resource type="Script" uid="uid://bsis3yh6n3aav" path="res://scripts/weapons/data/effect_data.gd" id="1_68odr"]
 [ext_resource type="Script" uid="uid://dskg001fqn105" path="res://scripts/weapons/data/fire_mode_data.gd" id="1_fire"]
 [ext_resource type="Script" uid="uid://d3okkd22brolr" path="res://scripts/weapons/data/hand_data.gd" id="2_hand"]
@@ -19,5 +20,6 @@ velocity_scaling_multiplier = 3.0
 [resource]
 script = ExtResource("2_hand")
 hand_name = "Zoom Sniper"
+hand_texture = ExtResource("1_43gey")
 passive_ink_regen_per_sec = 4.0
 primary_mode = SubResource("Resource_primary")

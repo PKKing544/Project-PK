@@ -69,7 +69,7 @@ var knockback_comp: KnockbackComponent
 	set(val):
 		outline_width = val
 		_refresh_outlines()
-@export var outline_depth_offset: float = 0.0:
+@export var outline_depth_offset: float = 0.002:
 	set(val):
 		outline_depth_offset = val
 		_refresh_outlines()

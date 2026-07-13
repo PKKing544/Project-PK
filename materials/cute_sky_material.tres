@@ -1,0 +1,17 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://d1oq3l5txrsdp"]
+
+[ext_resource type="Shader" uid="uid://x45k46vdue4o" path="res://materials/cute_sky.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" uid="uid://bwggxlj22hkjy" path="res://art/cute_clouds.png" id="2_texture"]
+
+[resource]
+shader = ExtResource("1_shader")
+shader_parameter/sky_top_color = Color(0, 0.65866673, 0.76, 1)
+shader_parameter/sky_horizon_color = Color(0.1845, 0.23335832, 0.41, 1)
+shader_parameter/sky_bottom_color = Color(0.8188, 0.8544, 0.89, 1)
+shader_parameter/cloud_texture = ExtResource("2_texture")
+shader_parameter/cloud_speed = 0.04
+shader_parameter/cloud_direction = Vector2(1, 0.4)
+shader_parameter/cloud_scale = 0.2
+shader_parameter/cloud_threshold = 0.05
+shader_parameter/cloud_feather = 0.1
+shader_parameter/cloud_color = Color(0.8178, 0.85173005, 0.87, 1)

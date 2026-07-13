@@ -46,6 +46,16 @@ class_name CloudManager
 		_update_materials()
 
 func _ready() -> void:
+	# Load the cute clouds texture to align ground shadows with the skybox
+	var cute_clouds_tex = load("res://art/cute_clouds.png")
+	if cute_clouds_tex:
+		cloud_texture = cute_clouds_tex
+		cloud_scale = 0.002
+		cloud_speed = 0.006
+		cloud_direction = Vector2(1.0, 0.4)
+		cloud_threshold = 0.1
+		cloud_feather = 0.05
+		cloud_strength = 0.25 # Soft cute shadows
 	_update_materials()
 
 func _process(_delta: float) -> void:

@@ -2,17 +2,12 @@
 
 [ext_resource type="Shader" uid="uid://cullkgq020144" path="res://art/prototype_grid.gdshader" id="1_shader"]
 [ext_resource type="Texture2D" uid="uid://brjrp4te6lnss" path="res://art/terrain_noise.tres" id="2_kwqyr"]
+[ext_resource type="Texture2D" uid="uid://bwggxlj22hkjy" path="res://art/cute_clouds.png" id="3_t3g1v"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_t3g1v"]
 
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_150tb"]
 noise = SubResource("FastNoiseLite_t3g1v")
-seamless = true
-
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_kgq0o"]
-
-[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_psasc"]
-noise = SubResource("FastNoiseLite_kgq0o")
 seamless = true
 
 [resource]
@@ -36,13 +31,13 @@ shader_parameter/camera_world_pos = Vector3(0, 0, 0)
 shader_parameter/vignette_inner = 0.0
 shader_parameter/vignette_outer = 1.40000002086168
 shader_parameter/vignette_offset = 2.30000003427276
-shader_parameter/cloud_texture = SubResource("NoiseTexture2D_psasc")
+shader_parameter/cloud_texture = ExtResource("3_t3g1v")
 shader_parameter/cloud_scale = 0.002
 shader_parameter/cloud_speed = 0.006
-shader_parameter/cloud_direction = Vector2(1, 0.5)
-shader_parameter/cloud_threshold = 0.425
-shader_parameter/cloud_feather = 0.055
-shader_parameter/cloud_strength = 0.345
+shader_parameter/cloud_direction = Vector2(1, 0.4)
+shader_parameter/cloud_threshold = 0.1
+shader_parameter/cloud_feather = 0.05
+shader_parameter/cloud_strength = 0.25
 shader_parameter/cuts = 3
 shader_parameter/wrap = 0.0
 shader_parameter/steepness = 1.0
