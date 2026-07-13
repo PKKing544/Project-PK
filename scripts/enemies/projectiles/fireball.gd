@@ -63,7 +63,7 @@ func _physics_process(delta: float):
 
 func _apply_wall_avoidance(delta: float):
 	var space = get_world_3d().direct_space_state
-	var ray_len = 3.0
+	var ray_len = 2.5
 	var avoid_vec = Vector3.ZERO
 	
 	var side_offset = 0.4
@@ -88,19 +88,23 @@ func _apply_wall_avoidance(delta: float):
 		
 		var res = space.intersect_ray(query)
 		if not res.is_empty():
-			var dist = (res.position - global_position).length()
-			var weight = 1.0 - (dist / ray_len)
-			avoid_vec += res.normal * weight
+			var hit_normal = res.normal
+			var dot = direction.dot(hit_normal)
+			
+			# If we are heading straight into the wall (dot < -0.6), DON'T try to bounce off!
+			# Just let it hit and explode gracefully. We ONLY want to avoid walls if we are grazing them.
+			if dot > -0.6:
+				var dist = (res.position - global_position).length()
+				var weight = 1.0 - (dist / ray_len)
+				
+				# Push purely outwards from the surface, completely ignoring backward momentum
+				var push_dir = hit_normal - direction * dot
+				if push_dir.length_squared() > 0.01:
+					avoid_vec += push_dir.normalized() * weight
 			
 	if avoid_vec != Vector3.ZERO:
-		# Prevent the wall avoidance from ever pushing the fireball completely backwards
-		var forward_dot = avoid_vec.dot(direction)
-		if forward_dot < -0.2:
-			# If it's pushing backwards, flatten the vector so it only pushes sideways away from the wall
-			avoid_vec = avoid_vec - direction * forward_dot
-			
-		# Blend avoidance into direction
-		var new_dir = direction + avoid_vec * 3.0 * delta
+		# Gently blend avoidance into direction
+		var new_dir = direction + avoid_vec.normalized() * 4.0 * delta
 		if new_dir.length_squared() > 0.01:
 			direction = new_dir.normalized()
 

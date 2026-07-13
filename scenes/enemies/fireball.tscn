@@ -7,10 +7,12 @@
 radius = 0.25
 
 [node name="Fireball" type="Area3D" unique_id=100121824]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 1, 0)
+transform = Transform3D(-1.5867066, 0, -1.2175229, 0, 2, 0, 1.2175229, 0, -1.5867066, 0, 0.8, 0)
 script = ExtResource("1_fb")
+start_speed = 25.0
 end_speed = 20.0
 damage = 1.0
+homing_strength = 1.2
 blast_radius = 0.5
 
 [node name="CollisionShape" type="CollisionShape3D" parent="." unique_id=345221804]

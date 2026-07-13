@@ -46,6 +46,7 @@ var fireball_charged: bool = false
 
 var last_known_player_pos: Vector3 = Vector3.ZERO
 var hold_fireball_timer: float = 0.0
+var is_facing_left: bool = false
 
 # Nodes
 var visuals: Node3D
@@ -368,21 +369,34 @@ func _track_player(delta: float):
 			
 			if last_known_player_pos != Vector3.ZERO:
 				var local_target = head_pivot.to_local(last_known_player_pos)
-				
-				# Calculate angle based on horizontal flip
-				var is_target_left = local_target.x < 0
 				var angle = atan2(local_target.y, local_target.x)
-				if is_target_left:
-					angle = -atan2(local_target.y, -local_target.x)
+				
+				if is_facing_left:
+					# Clamp around 180 degrees (PI)
+					var diff = wrapf(angle - PI, -PI, PI)
+					diff = clamp(diff, deg_to_rad(-35.0), deg_to_rad(35.0))
+					angle = PI + diff
 					
-				# Lock the head from rotating too extremely up or down (prevent neck breaking)
-				angle = clamp(angle, deg_to_rad(-35.0), deg_to_rad(35.0))
+					if sprite_head:
+						sprite_head.flip_v = true
+					if sprite_whiskers:
+						sprite_whiskers.flip_v = true
+				else:
+					# Clamp around 0 degrees
+					var diff = wrapf(angle, -PI, PI)
+					diff = clamp(diff, deg_to_rad(-35.0), deg_to_rad(35.0))
+					angle = diff
+					
+					if sprite_head:
+						sprite_head.flip_v = false
+					if sprite_whiskers:
+						sprite_whiskers.flip_v = false
 				
 				var dist_ratio = (head_pivot.position - local_body_center).length() / max_extend_dist
 				var tilt = 0.0
 				if dist_ratio > 0.95:
 					tilt = 0.3 * sign(local_target.y)
-					if is_target_left: tilt = -tilt # Reverse tilt if flipped
+					if is_facing_left: tilt = -tilt # Reverse tilt if facing left
 					
 				var target_rot = angle + tilt
 				if sprite_head: sprite_head.rotation.z = lerp_angle(sprite_head.rotation.z, target_rot, delta * 8.0)
@@ -499,33 +513,23 @@ func _update_visuals_only(delta: float):
 			target_global = cam.global_position
 			
 	if visuals:
-		# Determine if the player is on the left side of the screen
-		var is_left = false
+		# Use the camera to determine left/right so it never vibrates when the Axolotl crawls over bumps
 		var cam = get_viewport().get_camera_3d()
 		if cam:
 			var player_cam_local = cam.to_local(target_global)
 			var enemy_cam_local = cam.to_local(global_position)
-			is_left = player_cam_local.x < enemy_cam_local.x
+			is_facing_left = player_cam_local.x < enemy_cam_local.x
 		else:
 			var player_local = visuals.to_local(target_global)
-			is_left = player_local.x < 0
+			is_facing_left = player_local.x < 0
 			
 		if visuals is SegmentedSpriteRig:
-			visuals.flip_horizontal = is_left
+			visuals.flip_horizontal = is_facing_left
 		else:
 			if sprite_body:
-				sprite_body.flip_h = is_left
+				sprite_body.flip_h = is_facing_left
 			if sprite_tail:
-				sprite_tail.flip_h = is_left
-			if sprite_head:
-				sprite_head.flip_h = is_left
-				sprite_head.flip_v = false
-			if sprite_whiskers:
-				sprite_whiskers.flip_h = is_left
-				sprite_whiskers.flip_v = false
-			if mouth_fireball and "flip_h" in mouth_fireball:
-				mouth_fireball.flip_h = is_left
-				mouth_fireball.flip_v = false
+				sprite_tail.flip_h = is_facing_left
 				
 	if not aim_pivot or not is_instance_valid(player): return
 	
@@ -679,15 +683,34 @@ func _tick_flamethrower_damage(delta: float):
 
 func _fire_projectile():
 	if not aim_pivot: return
+	
+	var from = head_pivot.global_position + (-aim_pivot.global_transform.basis.z * 0.5)
+	if mouth_fireball:
+		from = mouth_fireball.global_position
+		
+	var dir = Vector3.ZERO
+	if is_instance_valid(player):
+		dir = (player.global_position + Vector3(0, 1.0, 0) - from).normalized()
+	else:
+		dir = -aim_pivot.global_transform.basis.z.normalized()
+	
+	# Prevent firing if a wall is too close (would cause immediate bounce or explosion)
+	var space = get_world_3d().direct_space_state
+	var query = PhysicsRayQueryParameters3D.create(from, from + dir * 2.5, 1) # Layer 1 (Env)
+	query.exclude = [self.get_rid()]
+	for bubble in get_tree().get_nodes_in_group("bubble_shield"):
+		if is_instance_valid(bubble):
+			query.exclude.append(bubble.get_rid())
+			
+	var res = space.intersect_ray(query)
+	if not res.is_empty():
+		return # Abort! Wall is too close!
+	
 	var proj = FIREBALL_SCENE.instantiate()
 	get_parent().add_child(proj)
 	proj.creator = self
-	if mouth_fireball:
-		proj.global_position = mouth_fireball.global_position
-	else:
-		proj.global_position = head_pivot.global_position + (-aim_pivot.global_transform.basis.z * 0.5)
+	proj.global_position = from
 	
-	var dir = -aim_pivot.global_transform.basis.z.normalized()
 	# Apply slight random spread
 	var random_offset = Vector3(randf_range(-1,1), randf_range(-1,1), randf_range(-1,1)) * projectile_spread
 	proj.direction = (dir + random_offset).normalized()
