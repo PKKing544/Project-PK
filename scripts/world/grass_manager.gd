@@ -10,6 +10,7 @@ var _last_scan_time: float = 0.0
 const SCAN_INTERVAL: float = 2.0 # Rescan every 2s to pick up newly baked chunks
 
 var world_manager: WorldManager = null
+var _path_mask_tex: ImageTexture = null
 
 func _ready():
 	if not player_node:
@@ -77,3 +78,33 @@ func _process(delta):
 		if is_instance_valid(mat):
 			mat.set_shader_parameter("character_positions", char_data)
 			mat.set_shader_parameter("max_render_distance", max_dist)
+
+	if world_manager and is_instance_valid(world_manager) and world_manager.path_noise:
+		if not _path_mask_tex:
+			var n = world_manager.path_noise
+			var center_val = n.get_noise_2d(0, 0)
+			var threshold = world_manager.path_threshold
+			
+			var dither_width = world_manager.path_dither_width
+			var img = Image.create(512, 512, false, Image.FORMAT_L8)
+			for y in range(512):
+				for x in range(512):
+					var wx = (x * 2.0) - 512.0
+					var wy = (y * 2.0) - 512.0
+					var val = n.get_noise_2d(wx, wy) - center_val
+					var dist_from_edge = threshold - abs(val)
+					
+					var blend = 0.0
+					if dist_from_edge > 0.0:
+						if dither_width > 0.0:
+							blend = clamp(dist_from_edge / dither_width, 0.0, 1.0)
+						else:
+							blend = 1.0
+							
+					img.set_pixel(x, y, Color(blend, blend, blend, 1.0))
+			
+			_path_mask_tex = ImageTexture.create_from_image(img)
+		
+		for mat in _grass_materials:
+			if is_instance_valid(mat):
+				mat.set_shader_parameter("path_noise_tex", _path_mask_tex)

@@ -69,42 +69,15 @@ material = ExtResource("3_px7vw")
 
 [node name="ElephantEnemy" parent="." unique_id=1839823746 instance=ExtResource("5_t5rmt")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 109, 39, 45)
-use_outline = null
-outline_color = null
-outline_width = null
-outline_depth_offset = null
-outline_use_billboard = null
 
 [node name="ElephantEnemy2" parent="." unique_id=280533684 instance=ExtResource("5_t5rmt")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -52, 7, 37)
-use_outline = null
-outline_color = null
-outline_width = null
-outline_depth_offset = null
-outline_use_billboard = null
 
 [node name="ElephantEnemy3" parent="." unique_id=1174916220 instance=ExtResource("5_t5rmt")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 8, -14)
-use_outline = null
-outline_color = null
-outline_width = null
-outline_depth_offset = null
-outline_use_billboard = null
 
 [node name="BasicEnemy" parent="." unique_id=1717088046 instance=ExtResource("6_rirtd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 1, 0)
-use_outline = null
-outline_color = null
-outline_width = null
-outline_depth_offset = null
-outline_use_billboard = null
 
 [node name="AxolotlEnemy" parent="." unique_id=1904918539 instance=ExtResource("7_01hy8")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 1, -19)
-editor_snap_to_surface = true
-bubble_radius = 4.5
-use_outline = null
-outline_color = null
-outline_width = null
-outline_depth_offset = null
-outline_use_billboard = null

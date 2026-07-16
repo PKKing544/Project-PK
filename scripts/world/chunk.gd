@@ -11,6 +11,10 @@ var structure_scene_path: String = ""
 
 var terrain_settings: TerrainSettings
 var noise: FastNoiseLite
+var path_noise: FastNoiseLite
+var path_threshold: float = 0.05
+var path_color: Color = Color("8B4513")
+var path_dither_width: float = 0.015
 var current_tier: Tier = Tier.PURPLE
 var skip_terrain: bool = false  # Set by WorldManager when using baked ground
 
@@ -18,6 +22,8 @@ var skip_terrain: bool = false  # Set by WorldManager when using baked ground
 var _structure_local_offset: Vector3 = Vector3.ZERO
 # Footprint (X, Z) of the fill platform that hides terrain clipping
 var _fill_footprint: Vector2 = Vector2(50.0, 50.0)
+# Hole footprint to skip terrain generation beneath structure
+var _hole_footprint: Vector2 = Vector2.ZERO
 
 const CHUNK_SIZE = 100.0
 
@@ -26,7 +32,15 @@ const BILLBOARD_MAP = {
 	"res://scenes/chunks/tower_chunk.tscn": "res://art/billboards/tower_chunk_billboard.jpg",
 	"res://scenes/chunks/courtyard_chunk.tscn": "res://art/billboards/courtyard_chunk_billboard.jpg",
 	"res://scenes/chunks/room_chunk.tscn": "res://art/billboards/room_chunk_billboard.jpg",
-	"res://scenes/chunks/hall_chunk.tscn": "res://art/billboards/hall_chunk_billboard.png"
+	"res://scenes/chunks/hall_chunk.tscn": "res://art/billboards/hall_chunk_billboard.png",
+	"res://scenes/chunks/large_chunk_1.tscn": "res://art/billboards/large_chunk_1_billboard.jpg",
+	"res://scenes/chunks/large_chunk_2.tscn": "res://art/billboards/large_chunk_2_billboard.jpg",
+	"res://scenes/chunks/large_chunk_3.tscn": "res://art/billboards/large_chunk_3_billboard.jpg",
+	"res://scenes/chunks/small_chunk_1.tscn": "res://art/billboards/small_chunk_1_billboard.jpg",
+	"res://scenes/chunks/small_chunk_2.tscn": "res://art/billboards/small_chunk_2_billboard.jpg",
+	"res://scenes/chunks/small_chunk_3.tscn": "res://art/billboards/small_chunk_3_billboard.jpg",
+	"res://scenes/chunks/small_chunk_4.tscn": "res://art/billboards/small_chunk_4_billboard.jpg",
+	"res://scenes/chunks/small_chunk_5.tscn": "res://art/billboards/small_chunk_5_billboard.jpg"
 }
 
 func _ready():
@@ -49,13 +63,21 @@ func _ready():
 	content_2d.hide()
 	add_child(content_2d)
 
-func init_chunk(settings: TerrainSettings, noise_obj: FastNoiseLite, structure_path: String,
-				local_offset: Vector3 = Vector3.ZERO, fill_footprint: Vector2 = Vector2(50.0, 50.0)):
+func init_chunk(settings: TerrainSettings, noise_obj: FastNoiseLite, path_noise_obj: FastNoiseLite, p_threshold: float, structure_path: String,
+				local_offset: Vector3 = Vector3.ZERO, fill_footprint: Vector2 = Vector2(50.0, 50.0), hole_footprint: Vector2 = Vector2.ZERO):
 	terrain_settings = settings
 	noise = noise_obj
+	path_noise = path_noise_obj
+	path_threshold = p_threshold
 	structure_scene_path = structure_path
 	_structure_local_offset = local_offset
 	_fill_footprint = fill_footprint
+	_hole_footprint = hole_footprint
+	
+	var parent = get_parent()
+	if parent and "path_color" in parent:
+		path_color = parent.path_color
+		path_dither_width = parent.path_dither_width
 	
 	if not skip_terrain:
 		_generate_terrain()
@@ -76,19 +98,39 @@ func _generate_terrain():
 			var x1 = (x + 1) * res
 			var z1 = (z + 1) * res
 			
+			# Check if this quad is inside the hole footprint
+			if structure_scene_path != "" and _hole_footprint != Vector2.ZERO:
+				var quad_cx = (x0 + x1) / 2.0 - (CHUNK_SIZE / 2.0)
+				var quad_cz = (z0 + z1) / 2.0 - (CHUNK_SIZE / 2.0)
+				var dx = abs(quad_cx - _structure_local_offset.x)
+				var dz = abs(quad_cz - _structure_local_offset.z)
+				if dx < (_hole_footprint.x / 2.0) and dz < (_hole_footprint.y / 2.0):
+					continue
+			
 			var v0 = _get_vertex(x0, z0)
 			var v1 = _get_vertex(x1, z0)
 			var v2 = _get_vertex(x1, z1)
 			var v3 = _get_vertex(x0, z1)
 			
+			var c0 = _get_color(x0, z0)
+			var c1 = _get_color(x1, z0)
+			var c2 = _get_color(x1, z1)
+			var c3 = _get_color(x0, z1)
+			
 			# Triangle 1
+			st.set_color(c0)
 			st.add_vertex(v0)
+			st.set_color(c1)
 			st.add_vertex(v1)
+			st.set_color(c2)
 			st.add_vertex(v2)
 			
 			# Triangle 2
+			st.set_color(c0)
 			st.add_vertex(v0)
+			st.set_color(c2)
 			st.add_vertex(v2)
+			st.set_color(c3)
 			st.add_vertex(v3)
 			
 	st.generate_normals()
@@ -119,6 +161,31 @@ func _get_vertex(lx: float, lz: float) -> Vector3:
 	h = snapped(h, terrain_settings.quantization)
 	
 	return Vector3(lx - (CHUNK_SIZE / 2.0), h, lz - (CHUNK_SIZE / 2.0))
+
+func _get_color(lx: float, lz: float) -> Color:
+	if not path_noise:
+		return Color.WHITE
+		
+	var gx = global_position.x + lx - (CHUNK_SIZE / 2.0)
+	var gz = global_position.z + lz - (CHUNK_SIZE / 2.0)
+	
+	var center_val = path_noise.get_noise_2d(0, 0)
+	var path_val = path_noise.get_noise_2d(gx, gz) - center_val
+	var abs_val = abs(path_val)
+	
+	var final_color = path_color
+	
+	if abs_val < path_threshold:
+		var dist_from_edge = path_threshold - abs_val
+		var blend = 1.0
+		if path_dither_width > 0.0:
+			blend = clamp(dist_from_edge / path_dither_width, 0.0, 1.0)
+			
+		final_color.a = blend
+		return final_color
+		
+	final_color.a = 0.0
+	return final_color
 
 func _load_structure():
 	if structure_scene_path == "" or not FileAccess.file_exists(structure_scene_path):

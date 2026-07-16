@@ -11,10 +11,13 @@ class_name TerrainPainter
 @export var grid_w: int = 0
 @export var grid_h: int = 0
 
-## Inspector buttons — click these to run the action
-@export_tool_button("Bake from Noise", "Reload")       var _btn_bake  = bake_from_noise
-@export_tool_button("Rebuild Mesh",    "MeshInstance3D") var _btn_mesh  = rebuild_mesh
-@export_tool_button("Build Collision", "CollisionShape3D") var _btn_col = build_collision
+## Inspector buttons — toggle these to run the action
+@export var _btn_bake: bool = false:
+	set(v): bake_from_noise()
+@export var _btn_mesh: bool = false:
+	set(v): rebuild_mesh()
+@export var _btn_col: bool = false:
+	set(v): build_collision()
 
 var _mesh_instance: MeshInstance3D
 var _static_body: StaticBody3D

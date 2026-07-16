@@ -1,0 +1,49 @@
+[gd_scene format=3 uid="uid://c774e7012fbc"]
+[ext_resource type="Material" uid="uid://t7bds6aj7mmm" path="res://art/prototype_grid.tres" id="1_grid"]
+[ext_resource type="PackedScene" uid="uid://c3m7yab1t4a2p" path="res://scenes/enemies/elephant_enemy.tscn" id="2_elephant"]
+[ext_resource type="PackedScene" uid="uid://bfw64e8pvwh46" path="res://scenes/enemies/axolotl_enemy.tscn" id="3_axolotl"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/basic_enemy.tscn" id="4_basic"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pit"]
+albedo_color = Color(0.1, 0.1, 0.1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_beam"]
+albedo_color = Color(0.6, 0.4, 0.2, 1)
+
+[node name="SmallChunk5" type="Node3D"]
+
+[node name="LevelGeometry" type="CSGCombiner3D" parent="."]
+use_collision = true
+
+
+[node name="Room" type="CSGBox3D" parent="LevelGeometry"]
+size = Vector3(15, 15, 15)
+material = ExtResource("1_grid")
+
+[node name="Interior" type="CSGBox3D" parent="LevelGeometry/Room"]
+operation = 2
+size = Vector3(13, 13, 13)
+
+[node name="Pit" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -6, 0)
+operation = 2
+size = Vector3(10, 5, 15)
+
+[node name="PitBottom" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -8, 0)
+size = Vector3(10, 1, 13)
+material = SubResource("StandardMaterial3D_pit")
+
+[node name="Beam" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+size = Vector3(2, 0.5, 13)
+material = SubResource("StandardMaterial3D_beam")
+
+[node name="DimLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+light_color = Color(0.6, 0.5, 0.7, 1)
+light_energy = 0.5
+
+[node name="Basic" parent="." instance=ExtResource("4_basic")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, -1, 4)
+

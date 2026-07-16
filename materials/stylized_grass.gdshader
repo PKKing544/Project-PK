@@ -3,8 +3,11 @@
 shader_type spatial;
 render_mode depth_prepass_alpha, depth_draw_opaque, cull_disabled;
 #include "res://materials/shaderinc/dither.gdshaderinc"
-
 group_uniforms colours_and_textures;
+
+group_uniforms path_system;
+uniform sampler2D path_noise_tex : filter_linear;
+
 uniform sampler2D albedo_texture : source_color, filter_nearest;
 uniform vec4 albedo1 : source_color = vec4(1.0f);
 
@@ -90,6 +93,7 @@ varying vec3 model_origin;
 varying vec3 object_origin;
 varying vec3 world_pos;
 varying float player_displacement_fake_perspective;
+varying float path_mask_varying;
 
 vec2 rotate_vec2(vec2 vector, float angle) {
 	float angle_deg = angle * (PI / 180.0);
@@ -131,6 +135,11 @@ void vertex() {
 	}
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	object_origin = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+	
+	// Check path system
+	vec2 path_uv = (object_origin.xz + vec2(512.0)) / 1024.0;
+	float path_mask = texture(path_noise_tex, path_uv).r;
+	path_mask_varying = path_mask;
 	
 	float seed = 10.0 * location_seed(object_origin.xy);
 	float frametime = 1.0 / framerate;
@@ -295,7 +304,10 @@ void fragment() {
 	// Far distance dither fade: fade/clip grass beyond max_render_distance
 	float player_dist = distance(character_positions[0].xz, object_origin.xz);
 	float distance_fade = 1.0 - smoothstep(max_render_distance - render_distance_fade_margin, max_render_distance, player_dist);
-
+	
+	// Apply path mask to the dither alpha
+	ALPHA *= (1.0 - path_mask_varying);
+	
 	if (dither_check(FRAGCOORD.xy, proximity_fade * distance_fade * ALPHA)) discard;
 }
 

@@ -1,0 +1,85 @@
+[gd_scene format=3 uid="uid://764b77b4faga"]
+[ext_resource type="Material" uid="uid://t7bds6aj7mmm" path="res://art/prototype_grid.tres" id="1_grid"]
+[ext_resource type="PackedScene" uid="uid://c3m7yab1t4a2p" path="res://scenes/enemies/elephant_enemy.tscn" id="2_elephant"]
+[ext_resource type="PackedScene" uid="uid://bfw64e8pvwh46" path="res://scenes/enemies/axolotl_enemy.tscn" id="3_axolotl"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/basic_enemy.tscn" id="4_basic"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_column"]
+albedo_color = Color(0.6, 0.2, 0.2, 1)
+
+[node name="LargeChunk2" type="Node3D"]
+
+[node name="LevelGeometry" type="CSGCombiner3D" parent="."]
+use_collision = true
+
+
+[node name="Tower" type="CSGCylinder3D" parent="LevelGeometry"]
+radius = 20.0
+height = 40.0
+sides = 16
+material = ExtResource("1_grid")
+
+[node name="TowerInterior" type="CSGCylinder3D" parent="LevelGeometry/Tower"]
+operation = 2
+radius = 18.0
+height = 38.0
+sides = 16
+
+[node name="CentralColumn" type="CSGCylinder3D" parent="LevelGeometry"]
+radius = 6.0
+height = 40.0
+sides = 16
+material = SubResource("StandardMaterial3D_column")
+
+[node name="CentralColumnInterior" type="CSGCylinder3D" parent="LevelGeometry/CentralColumn"]
+operation = 2
+radius = 4.0
+height = 38.0
+sides = 16
+
+[node name="CentralColumnWindow1" type="CSGBox3D" parent="LevelGeometry/CentralColumn"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -10, 6)
+operation = 2
+size = Vector3(3, 4, 4)
+
+[node name="CentralColumnWindow2" type="CSGBox3D" parent="LevelGeometry/CentralColumn"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, -6)
+operation = 2
+size = Vector3(3, 4, 4)
+
+[node name="Tier1" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, -15, 0)
+size = Vector3(8, 1, 12)
+material = ExtResource("1_grid")
+
+[node name="Tier2" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5, 12)
+size = Vector3(10, 1, 8)
+material = ExtResource("1_grid")
+
+[node name="Tier3" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 5, 0)
+size = Vector3(8, 1, 14)
+material = ExtResource("1_grid")
+
+[node name="Torch1" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, -13, 0)
+light_color = Color(1, 0.6, 0.2, 1)
+light_energy = 3.0
+omni_range = 15.0
+
+[node name="Torch2" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 7, 0)
+light_color = Color(1, 0.6, 0.2, 1)
+light_energy = 3.0
+omni_range = 15.0
+
+[node name="Basic1" parent="." instance=ExtResource("4_basic")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, -14, 0)
+
+[node name="Basic2" parent="." instance=ExtResource("4_basic")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 6, 0)
+
+[node name="Basic3" parent="." instance=ExtResource("4_basic")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 12, 0)
+

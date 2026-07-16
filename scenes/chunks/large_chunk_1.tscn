@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://ccca20644cd5"]
+[ext_resource type="Material" uid="uid://t7bds6aj7mmm" path="res://art/prototype_grid.tres" id="1_grid"]
+[ext_resource type="PackedScene" uid="uid://c3m7yab1t4a2p" path="res://scenes/enemies/elephant_enemy.tscn" id="2_elephant"]
+[ext_resource type="PackedScene" uid="uid://bfw64e8pvwh46" path="res://scenes/enemies/axolotl_enemy.tscn" id="3_axolotl"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/basic_enemy.tscn" id="4_basic"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.2, 0.3, 0.4, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_trim"]
+albedo_color = Color(0.8, 0.6, 0.2, 1)
+
+[node name="LargeChunk1" type="Node3D"]
+
+[node name="LevelGeometry" type="CSGCombiner3D" parent="."]
+use_collision = true
+
+
+[node name="MainRoom" type="CSGBox3D" parent="LevelGeometry"]
+size = Vector3(30, 20, 30)
+material = ExtResource("1_grid")
+
+[node name="Interior" type="CSGBox3D" parent="LevelGeometry/MainRoom"]
+operation = 2
+size = Vector3(28, 18, 28)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="Ramp1" type="CSGPolygon3D" parent="LevelGeometry"]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 14, -9, 0)
+polygon = PackedVector2Array(0, 0, 14, 0, 14, 5, 0, 0)
+depth = 4.0
+material = SubResource("StandardMaterial3D_trim")
+
+[node name="Ramp2" type="CSGPolygon3D" parent="LevelGeometry"]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, -4, 14)
+polygon = PackedVector2Array(0, 0, 14, 0, 14, 5, 0, 0)
+depth = 4.0
+material = SubResource("StandardMaterial3D_trim")
+
+[node name="Balcony" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 1, 0)
+size = Vector3(4, 1, 28)
+material = ExtResource("1_grid")
+
+[node name="SuspendedRoom" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+size = Vector3(10, 8, 10)
+material = ExtResource("1_grid")
+
+[node name="SuspendedRoomInterior" type="CSGBox3D" parent="LevelGeometry/SuspendedRoom"]
+operation = 2
+size = Vector3(9, 7, 9)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="SuspendedRoomWindow" type="CSGBox3D" parent="LevelGeometry/SuspendedRoom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
+operation = 2
+size = Vector3(4, 3, 2)
+
+[node name="AmbientLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+light_color = Color(0.4, 0.7, 1, 1)
+light_energy = 2.0
+omni_range = 25.0
+
+[node name="Elephant" parent="." instance=ExtResource("2_elephant")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -8, 0)
+
+[node name="Axolotl" parent="." instance=ExtResource("3_axolotl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 2, 0)
+

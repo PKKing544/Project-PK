@@ -82,6 +82,14 @@ void fragment() {
 		base_color = albedo3.rgb;
 	}
 	
+	// If the vertex color has an alpha > 0, it's a path!
+	// We use dither_check (already included in this shader) to create a stylized pixel-dithered edge
+	if (COLOR.a > 0.0) {
+		if (!dither_check(FRAGCOORD.xy, COLOR.a)) {
+			base_color = COLOR.rgb;
+		}
+	}
+	
 	ALBEDO = show_grid ? mix(base_color, grid_color, final_grid) : base_color;
 
 	// Cloud shadows — scrolling noise darkens terrain and walls

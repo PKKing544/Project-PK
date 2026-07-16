@@ -1,0 +1,73 @@
+[gd_scene format=3 uid="uid://4d6ffb3de7c3"]
+[ext_resource type="Material" uid="uid://t7bds6aj7mmm" path="res://art/prototype_grid.tres" id="1_grid"]
+[ext_resource type="PackedScene" uid="uid://c3m7yab1t4a2p" path="res://scenes/enemies/elephant_enemy.tscn" id="2_elephant"]
+[ext_resource type="PackedScene" uid="uid://bfw64e8pvwh46" path="res://scenes/enemies/axolotl_enemy.tscn" id="3_axolotl"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/basic_enemy.tscn" id="4_basic"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_water"]
+albedo_color = Color(0.1, 0.5, 0.6, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bridge"]
+albedo_color = Color(0.4, 0.4, 0.4, 1)
+
+[node name="LargeChunk3" type="Node3D"]
+
+[node name="LevelGeometry" type="CSGCombiner3D" parent="."]
+use_collision = true
+
+
+[node name="MainRoom" type="CSGBox3D" parent="LevelGeometry"]
+size = Vector3(40, 20, 40)
+material = ExtResource("1_grid")
+
+[node name="Interior" type="CSGBox3D" parent="LevelGeometry/MainRoom"]
+operation = 2
+size = Vector3(38, 18, 38)
+
+[node name="DeepPit" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -15, 0)
+operation = 2
+size = Vector3(30, 20, 30)
+
+[node name="Water" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -20, 0)
+size = Vector3(30, 1, 30)
+material = SubResource("StandardMaterial3D_water")
+
+[node name="Bridge" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5, 0)
+size = Vector3(38, 1, 4)
+material = SubResource("StandardMaterial3D_bridge")
+
+[node name="SideChamber1" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19, -5, 0)
+size = Vector3(6, 6, 8)
+material = ExtResource("1_grid")
+operation = 2
+
+[node name="SideChamber2" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19, -5, 0)
+size = Vector3(6, 6, 8)
+material = ExtResource("1_grid")
+operation = 2
+
+[node name="Window1" type="CSGBox3D" parent="LevelGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, -19)
+size = Vector3(10, 6, 4)
+operation = 2
+
+[node name="BlueLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -10, 0)
+light_color = Color(0.2, 0.4, 1, 1)
+light_energy = 5.0
+omni_range = 30.0
+
+[node name="Axolotl" parent="." instance=ExtResource("3_axolotl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4, 0)
+
+[node name="Elephant1" parent="." instance=ExtResource("2_elephant")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, -4, 0)
+
+[node name="Elephant2" parent="." instance=ExtResource("2_elephant")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, -4, 0)
+

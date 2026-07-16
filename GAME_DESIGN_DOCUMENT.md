@@ -596,6 +596,8 @@ The Axolotl (`scripts/enemies/axolotl_enemy.gd`) is a stationary or wall-clingin
 ### State Machine
 - **SLEEP:** Default inactive state when the player is outside `threat_radius` (40m).
 - **CHARGING:** Player is inside threat range. The Axolotl pivot tracks the player and charges a fireball at its mouth.
+    - **Proximity Misfire:** The Axolotl casts a 2.5m ray ahead before firing. If it detects a wall, it safely aborts the shot to prevent instant bouncing/explosion.
+    - **Wall Grazing Fireballs:** The fireball projectile tracks the player but features a gentle obstacle avoidance system. If it grazes a wall, it gracefully steers away to avoid exploding. If fired directly into a wall head-on, it accepts the collision and explodes normally.
 - **FLAMETHROWER:** Player gets within `melee_radius` (8m). It opens its mouth and releases a high-damage-per-second fire spray.
 
 ### Weak Point & Explode Mechanic
